@@ -9,7 +9,6 @@ import com.example.inventra.data.local.entity.toDomainList
 import com.example.inventra.data.local.entity.toEntityValues
 import com.example.inventra.domain.model.Note
 import com.example.inventra.domain.model.NoteCategory
-import com.example.inventra.domain.repository.NoteRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

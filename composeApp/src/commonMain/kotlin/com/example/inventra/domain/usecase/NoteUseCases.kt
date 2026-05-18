@@ -3,7 +3,6 @@ package com.example.inventra.domain.usecase
 import com.example.inventra.domain.model.Note
 import com.example.inventra.domain.model.NoteCategory
 import com.example.inventra.domain.repository.AIRepository
-import com.example.inventra.domain.repository.NoteRepository
 import com.example.inventra.domain.repository.WritingStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

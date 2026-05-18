@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Note
 import com.example.inventra.domain.model.NoteCategory
-import com.example.inventra.domain.repository.NoteRepository
 import com.example.inventra.domain.usecase.DeleteNoteUseCase
 import com.example.inventra.domain.usecase.GetAllNotesUseCase
 import com.example.inventra.domain.usecase.NoteSortBy

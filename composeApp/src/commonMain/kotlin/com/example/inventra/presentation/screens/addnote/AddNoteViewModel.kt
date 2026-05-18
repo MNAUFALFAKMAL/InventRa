@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Note
 import com.example.inventra.domain.model.NoteCategory
 import com.example.inventra.domain.model.NoteColor
-import com.example.inventra.domain.repository.NoteRepository
 import com.example.inventra.domain.usecase.SaveNoteUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -3,7 +3,6 @@ package com.example.inventra.presentation.screens.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Note
-import com.example.inventra.domain.repository.NoteRepository
 import com.example.inventra.domain.usecase.DeleteNoteUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
