@@ -8,8 +8,9 @@ import com.example.inventra.data.local.datastore.UserPreferences
 import com.example.inventra.data.local.datastore.create
 import com.example.inventra.data.remote.api.GeminiService
 import com.example.inventra.data.repository.AIRepositoryImpl
-import com.example.inventra.data.repository.NoteRepositoryImpl
+import com.example.inventra.data.repository.ItemRepositoryImpl
 import com.example.inventra.domain.repository.AIRepository
+import com.example.inventra.domain.repository.ItemRepository
 import com.example.inventra.domain.usecase.DeleteNoteUseCase
 import com.example.inventra.domain.usecase.GenerateIdeasUseCase
 import com.example.inventra.domain.usecase.GetAllNotesUseCase
@@ -55,7 +56,7 @@ val preferencesModule = module {
 // ==================== REPOSITORY MODULE ====================
 
 val repositoryModule = module {
-    singleOf(::NoteRepositoryImpl) bind NoteRepository::class
+    singleOf(::ItemRepositoryImpl) bind ItemRepository::class
     singleOf(::AIRepositoryImpl) bind AIRepository::class
 }
 
