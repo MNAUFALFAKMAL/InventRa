@@ -1,247 +1,255 @@
-# 📱 NoteAI - KMP Project Template
+# 📦 InventRa — Inventaris Nexara App
 
-Template project **Kotlin Multiplatform** untuk mata kuliah **Pengembangan Aplikasi Mobile** di ITERA.
+![CI](https://github.com/MNAUFALFAKMAL/InventRa/actions/workflows/ci.yml/badge.svg)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-brightgreen)
+![KMP](https://img.shields.io/badge/KMP-Kotlin%20Multiplatform-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-Aplikasi Notes dengan fitur AI untuk membantu mahasiswa memahami arsitektur dan pattern yang digunakan dalam pengembangan aplikasi mobile modern.
+Aplikasi manajemen inventaris berbasis AI yang dibangun dengan Kotlin Multiplatform (KMP) dan Compose Multiplatform. InventRa membantu pengguna mencatat, mengelola, dan menganalisis inventaris barang secara efisien dengan bantuan AI.
 
-> **📚 Dokumentasi Lengkap**
-> 
-> | Dokumen | Deskripsi |
-> |---------|-----------|
-> | [🚀 Cara Menjalankan](./docs/CARA_MENJALANKAN.md) | **BACA INI DULU!** Panduan setup dan running aplikasi |
-> | [📋 Panduan Project](./docs/PANDUAN_PROJECT.md) | Informasi lengkap tentang project, timeline, dan penilaian |
-> | [🌿 Git Workflow](./docs/GIT_WORKFLOW.md) | Cara menggunakan Git dan branching strategy |
-> | [📜 Aturan Modifikasi](./docs/ATURAN_MODIFIKASI.md) | Apa yang boleh dan tidak boleh dimodifikasi |
-> | [🏗️ Struktur Kode](./docs/STRUKTUR_KODE.md) | Penjelasan arsitektur dan struktur folder |
-> | [🔧 Troubleshooting](./docs/TROUBLESHOOTING.md) | Solusi untuk masalah umum |
+---
 
-## ✨ Fitur Aplikasi
+## 👥 Tim
 
-- 📝 **CRUD Notes** - Tambah, edit, hapus, dan lihat catatan
-- 🔍 **Search & Filter** - Cari dan filter notes berdasarkan kategori
-- 🤖 **AI Assistant** - Summarize, generate ideas, improve writing
-- 🌙 **Dark Mode** - Tema gelap/terang
-- 📱 **Cross-Platform** - Android & iOS dari satu codebase
+| Nama | NIM | GitHub | Role            |
+|------|-----|--------|-----------------|
+| Muhammad Naufal Fikri Akmal | 123140132 | [@MNAUFALFAKMAL](https://github.com/MNAUFALFAKMAL) | Backend Developer |
+| Nabila Ramadhani Mujahidin | 123140062 | [@nblable](https://github.com/nblable) | UI/UX Developer |
 
-## 🏗️ Arsitektur & Teknologi
+> **Mata Kuliah:** IF25-22017 Pengembangan Aplikasi Mobile  
+> **Program Studi:** Teknik Informatika — Institut Teknologi Sumatera (ITERA)  
+> **Dosen:** Pak Habib ([mh4Scripts](https://github.com/mh4Scripts))
 
-### Clean Architecture + MVVM
+---
+
+## 📱 Deskripsi Aplikasi
+
+**InventRa** adalah aplikasi manajemen inventaris modern yang memungkinkan pengguna untuk:
+- Mencatat dan melacak barang inventaris
+- Mengkategorikan item berdasarkan jenis
+- Mendapatkan insight dari AI tentang inventaris
+- Mengakses data secara offline (offline-first)
+
+**Target Pengguna:** Individu, UMKM, atau tim kecil yang membutuhkan solusi inventaris sederhana namun powerful.
+
+---
+
+## ✨ Fitur
+
+### Minimum (Wajib)
+- [ ] **Item List Screen** — Tampilkan semua item inventaris
+- [ ] **Item Detail Screen** — Detail lengkap per item
+- [ ] **Add/Edit Item Screen** — Form tambah dan edit item
+- [ ] **Category Screen** — Filter berdasarkan kategori
+- [ ] **Search Screen** — Cari item berdasarkan nama/kode
+- [ ] **CRUD Operations** — Create, Read, Update, Delete item
+- [ ] **Local Storage** — SQLDelight untuk data persisten
+- [ ] **State Management** — StateFlow + ViewModel (MVVM)
+- [ ] **Navigation** — Multi-screen dengan argument passing
+- [ ] **Dependency Injection** — Koin DI setup
+- [ ] **Unit Tests** — Minimal 10 unit tests, coverage > 50%
+- [ ] **UI Tests** — Minimal 3 UI tests
+
+### Bonus
+- [ ] **AI Integration** (+10%) — Gemini API untuk analisis inventaris
+- [ ] **Dark Mode** (+5%) — Support tema gelap/terang
+- [ ] **Offline First** (+5%) — App berfungsi tanpa internet
+- [ ] **CI/CD** (+5%) — GitHub Actions automated build & test
+- [ ] **iOS Support** (+10%) — Build untuk iOS simulator
+
+---
+
+## 🏗️ Arsitektur
+
+Menggunakan **Clean Architecture + MVVM**:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                        │
-│  ┌───────────────┐        ┌───────────────┐                 │
-│  │    Screen     │◄──────►│   ViewModel   │                 │
-│  │  (Composable) │ State  │  (StateFlow)  │                 │
-│  └───────────────┘        └───────┬───────┘                 │
-└───────────────────────────────────┼─────────────────────────┘
-                                    │
-┌───────────────────────────────────┼─────────────────────────┐
-│                      DOMAIN LAYER │                          │
-│                    ┌──────────────▼──────────────┐          │
-│                    │         Use Cases           │          │
-│                    │    (Business Logic)         │          │
-│                    └──────────────┬──────────────┘          │
-│                    ┌──────────────▼──────────────┐          │
-│                    │    Repository Interface     │          │
-│                    └──────────────┬──────────────┘          │
-└───────────────────────────────────┼─────────────────────────┘
-                                    │
-┌───────────────────────────────────┼─────────────────────────┐
-│                       DATA LAYER  │                          │
-│                    ┌──────────────▼──────────────┐          │
-│                    │   Repository Implementation │          │
-│                    └──────────────┬──────────────┘          │
-│              ┌────────────────────┼────────────────────┐    │
-│              │                    │                    │    │
-│        ┌─────▼─────┐        ┌─────▼─────┐       ┌─────▼────┐│
-│        │  SQLDelight│        │   Ktor   │       │ DataStore││
-│        │  (Local)  │        │ (Remote) │       │  (Prefs) ││
-│        └───────────┘        └──────────┘       └──────────┘│
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│           PRESENTATION LAYER            │
+│   Screen (Composable) ◄──► ViewModel   │
+│          StateFlow / UI State           │
+└─────────────────────┬───────────────────┘
+                      │ calls
+┌─────────────────────▼───────────────────┐
+│             DOMAIN LAYER                │
+│   Use Cases ──► Repository Interface   │
+│           Domain Models                 │
+└─────────────────────┬───────────────────┘
+                      │ implements
+┌─────────────────────▼───────────────────┐
+│              DATA LAYER                 │
+│  SQLDelight (Local) │ Ktor (Remote AI)  │
+│       DataStore (Preferences)           │
+└─────────────────────────────────────────┘
 ```
 
-### Tech Stack
+### Dependency Rule
+Domain tidak tahu tentang Data atau Presentation. Dependencies hanya mengarah ke dalam (inward).
 
-| Layer | Technology |
-|-------|------------|
-| **UI** | Compose Multiplatform, Material 3 |
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Teknologi |
+|-------|-----------|
+| **Framework** | Kotlin Multiplatform, Compose Multiplatform |
+| **UI** | Material Design 3, Compose |
 | **State** | StateFlow, ViewModel |
-| **Navigation** | Compose Navigation (Type-safe) |
+| **Navigation** | Compose Navigation (Type-safe Routes) |
 | **Networking** | Ktor Client |
 | **Local DB** | SQLDelight |
 | **Preferences** | DataStore |
 | **DI** | Koin |
 | **AI** | Google Gemini API |
-| **Testing** | Kotlin Test, Turbine |
+| **Testing** | kotlin.test, Turbine, MockK |
+
+---
 
 ## 📁 Struktur Project
 
 ```
 composeApp/src/
-├── commonMain/kotlin/com/example/noteai/
-│   ├── core/                      # Core utilities
-│   │   ├── di/                    # Koin modules
-│   │   ├── network/               # Network config, error handling
-│   │   └── util/                  # Extensions, helpers
-│   │
-│   ├── data/                      # Data layer
-│   │   ├── local/
-│   │   │   ├── dao/               # SQLDelight DAOs
-│   │   │   ├── entity/            # Database entities
-│   │   │   └── datastore/         # DataStore preferences
-│   │   ├── remote/
-│   │   │   ├── api/               # API services (Ktor)
-│   │   │   └── dto/               # Data Transfer Objects
-│   │   └── repository/            # Repository implementations
-│   │
-│   ├── domain/                    # Domain layer (pure Kotlin)
-│   │   ├── model/                 # Domain models
-│   │   ├── repository/            # Repository interfaces
-│   │   └── usecase/               # Business logic
-│   │
-│   └── presentation/              # Presentation layer
-│       ├── navigation/            # Navigation setup
-│       ├── screens/               # Screen composables + ViewModels
-│       │   ├── home/
-│       │   ├── addnote/
-│       │   ├── detail/
-│       │   └── ai/
-│       ├── components/            # Reusable UI components
-│       └── theme/                 # Material theme
-│
-├── commonMain/sqldelight/         # SQLDelight schema
-│
-├── androidMain/kotlin/            # Android-specific (expect/actual)
-└── iosMain/kotlin/                # iOS-specific (expect/actual)
+├── commonMain/kotlin/com/example/inventra/
+│   ├── core/
+│   │   ├── di/          # Koin modules
+│   │   ├── network/     # HTTP client, API config
+│   │   └── util/        # Extensions, helpers
+│   ├── data/
+│   │   ├── local/       # SQLDelight, DataStore
+│   │   ├── remote/      # Ktor, DTOs
+│   │   └── repository/  # Repository implementations
+│   ├── domain/
+│   │   ├── model/       # Domain models
+│   │   ├── repository/  # Repository interfaces
+│   │   └── usecase/     # Business logic
+│   └── presentation/
+│       ├── navigation/  # Routes, NavHost
+│       ├── screens/     # home, addnote, detail, ai
+│       ├── components/  # Reusable composables
+│       └── theme/       # Material theme
+├── commonMain/sqldelight/ # Database schema
+├── androidMain/           # Android-specific code
+└── iosMain/               # iOS-specific code
 ```
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
+## 🚀 Setup & Menjalankan
 
-- Android Studio Ladybug (2024.2.1) atau lebih baru
-- Xcode 15+ (untuk iOS)
+### Prasyarat
+- Android Studio Ladybug (2024.2.1+)
 - JDK 17+
+- Android SDK API 34/35
+- Git
 
-### 👥 Ketentuan Kelompok
+### Langkah
 
-| Ketentuan | Detail |
-|-----------|--------|
-| Jumlah Anggota | **1 - 3 mahasiswa** per kelompok |
-| Format Branch | `project/[NIM-NIM-...]-[NamaAplikasi]` |
+```bash
+# 1. Clone repository
+git clone https://github.com/YOUR_USERNAME/InventRa.git
+cd InventRa
 
-**Contoh Branch:**
-- Individu: `project/121140001-TodoMaster`
-- 2 orang: `project/121140003-121140004-FitnessApp`
-- 3 orang: `project/121140007-121140008-121140009-StudyPlanner`
+# 2. Buat local.properties
+cp local.properties.example local.properties
+# Edit: isi sdk.dir dan GEMINI_API_KEY
+```
 
-### Setup
+Dapatkan Gemini API key gratis di [Google AI Studio](https://aistudio.google.com/)
 
-1. **Fork & Clone repository**
-   ```bash
-   # 1 orang fork, lalu invite anggota lain sebagai collaborator
-   # Semua anggota clone dari repo yang di-fork
-   git clone https://github.com/USERNAME_FORK/Pryk-PAM.git
-   cd Pryk-PAM
+```bash
+# 3. Build project
+./gradlew :composeApp:assembleDebug
 
-   # Buat branch project kelompok
-   git checkout -b project/121140003-121140004-FitnessApp
-   ```
+# 4. Install ke device/emulator
+./gradlew :composeApp:installDebug
+```
 
-2. **Setup `local.properties`**
+Atau buka di Android Studio → Sync → Run `composeApp`.
 
-   Salin template, lalu isi API key:
-   ```bash
-   cp local.properties.example local.properties
-   # edit local.properties dan isi GEMINI_API_KEY=...
-   ```
-
-   Dapatkan API key gratis di: https://aistudio.google.com/
-
-3. **Sync & Build**
-   ```bash
-   ./gradlew build              # build semua target
-   ./gradlew :composeApp:assembleDebug   # build APK debug saja (lebih cepat)
-   ```
-
-4. **Run**
-   - **Android**: pilih run configuration `composeApp` di Android Studio, atau
-     `./gradlew :composeApp:installDebug` ke emulator/device aktif.
-   - **iOS** (opsional): folder `iosApp/` belum disertakan di template ini —
-     lihat panduan di [`docs/CARA_MENJALANKAN.md`](./docs/CARA_MENJALANKAN.md#8-menjalankan-ios-lanjutan-opsional).
-
-## 📚 Materi yang Dicakup
-
-| Pertemuan | Topik | File/Folder Reference |
-|-----------|-------|----------------------|
-| 1 | Setup Environment | Root project setup |
-| 2 | Kotlin Lanjutan | `core/util/`, coroutines, Flow |
-| 3 | Compose Basics | `presentation/components/` |
-| 4 | MVVM & State | `presentation/screens/*/ViewModel.kt` |
-| 5 | Navigation | `presentation/navigation/` |
-| 6 | Networking | `data/remote/`, Ktor setup |
-| 7 | Local Storage | `data/local/`, SQLDelight |
-| 8 | Platform Code | `androidMain/`, `iosMain/`, expect/actual |
-| 9 | AI Integration | `data/remote/api/GeminiService.kt` |
-| 10 | Testing | `commonTest/` |
+---
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
-./gradlew allTests
-
-# Run common tests only
+# Semua unit tests
 ./gradlew :composeApp:testDebugUnitTest
+
+# Atau semua target
+./gradlew allTests
 ```
-
-## 📝 Tugas Mahasiswa
-
-### Sprint 1: Foundation
-- [ ] Clone dan setup project
-- [ ] Pahami struktur folder
-- [ ] Modifikasi tema/warna
-
-### Sprint 2: Core Features
-- [ ] Tambahkan field baru di Note (misal: priority, dueDate)
-- [ ] Implementasi fitur kategori/tags
-- [ ] Tambahkan validasi input
-
-### Sprint 3: Advanced Features
-- [ ] Implementasi search dengan debounce
-- [ ] Tambahkan filter dan sort
-- [ ] Implementasi offline-first
-
-### Sprint 4: AI & Polish
-- [ ] Integrasikan fitur AI baru
-- [ ] UI polish dan animasi
-- [ ] Tambahkan unit tests
-
-### Sprint 5: Final
-- [ ] Bug fixes
-- [ ] Dokumentasi
-- [ ] Prepare demo
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Buat branch fitur (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
-## 📄 License
-
-MIT License - silakan gunakan untuk pembelajaran.
-
-## 👨‍🏫 Dosen Pengampu
-### Pak Habib
-[GitHub: mh4Scripts](https://github.com/mh4Scripts)
-
-**Program Studi Teknik Informatika**  
-Institut Teknologi Sumatera (ITERA)
 
 ---
 
-*Template ini dibuat untuk mendukung pembelajaran Pengembangan Aplikasi Mobile dengan Kotlin Multiplatform.*
+## 📅 Project Plan
+
+### Sprint 1 — Planning & Setup (Minggu 11)
+| Task | PIC | Status |
+|------|-----|--------|
+| Setup GitHub repository & CI/CD | Semua | ✅ Done |
+| KMP project structure (Clean Architecture) | Lead | ✅ Done |
+| Domain models & interfaces | Lead | ✅ Done |
+| Koin DI setup | Lead | ✅ Done |
+| README & dokumentasi | Semua | ✅ Done |
+| Tema & branding InventRa | UI/UX | ✅ Done |
+
+### Sprint 2 — Core Features (Minggu 12)
+| Task | PIC | Status |
+|------|-----|--------|
+| Item List Screen + ViewModel | UI/UX | 🔲 Todo |
+| Add/Edit Item Screen | UI/UX | 🔲 Todo |
+| Item Detail Screen | UI/UX | 🔲 Todo |
+| SQLDelight schema & repository impl | Lead | 🔲 Todo |
+| Navigation setup (5 screens) | Lead | 🔲 Todo |
+| Unit tests untuk Repository | QA | 🔲 Todo |
+
+### Sprint 3 — Advanced Features (Minggu 13)
+| Task | PIC | Status |
+|------|-----|--------|
+| Search dengan debounce | Lead | 🔲 Todo |
+| Filter & sort by category/date | UI/UX | 🔲 Todo |
+| Gemini AI integration | Lead | 🔲 Todo |
+| Offline-first implementation | Lead | 🔲 Todo |
+| Unit tests lanjutan | QA | 🔲 Todo |
+
+### Sprint 4 — Polish & Testing (Minggu 14)
+| Task | PIC | Status |
+|------|-----|--------|
+| Bug fixes | Semua | 🔲 Todo |
+| UI polish & animasi | UI/UX | 🔲 Todo |
+| Dark mode | UI/UX | 🔲 Todo |
+| 10+ unit tests, 3+ UI tests | QA | 🔲 Todo |
+| Code coverage > 50% | QA | 🔲 Todo |
+
+### Sprint 5 — Final Preparation (Minggu 15)
+| Task | PIC | Status |
+|------|-----|--------|
+| Final bug fixes | Semua | 🔲 Todo |
+| Release APK | Lead | 🔲 Todo |
+| Slide presentasi | Semua | 🔲 Todo |
+| Demo script | Semua | 🔲 Todo |
+| README final | Semua | 🔲 Todo |
+
+---
+
+## 📄 Dokumentasi Tambahan
+
+| Dokumen | Deskripsi |
+|---------|-----------|
+| [Cara Menjalankan](./docs/CARA_MENJALANKAN.md) | Setup lengkap |
+| [Struktur Kode](./docs/STRUKTUR_KODE.md) | Arsitektur detail |
+| [Git Workflow](./docs/GIT_WORKFLOW.md) | Branching strategy |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Solusi masalah umum |
+
+---
+
+## 🤝 Contributing
+
+1. Buat branch dari `develop`: `git checkout -b feature/nama-fitur`
+2. Commit dengan konvensi: `feat: deskripsi singkat`
+3. Push dan buat Pull Request ke `develop`
+4. Request review dari teammate
+5. Merge setelah approved
+
+---
+
+*InventRa — Dikembangkan untuk mata kuliah Pengembangan Aplikasi Mobile, ITERA*
