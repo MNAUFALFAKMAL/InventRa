@@ -18,9 +18,11 @@ import com.example.inventra.presentation.screens.addedit.AddEditItemViewModel
 import com.example.inventra.presentation.screens.catalog.CatalogViewModel
 import com.example.inventra.presentation.screens.dashboard.DashboardViewModel
 import com.example.inventra.presentation.screens.detail.ItemDetailViewModel
+import com.example.inventra.presentation.screens.history.HistoryViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.bind
@@ -74,8 +76,9 @@ val useCaseModule = module {
 val viewModelModule = module {
     viewModelOf(::DashboardViewModel)
     viewModelOf(::CatalogViewModel)
-    viewModelOf(::ItemDetailViewModel)
-    viewModelOf(::AddEditItemViewModel)
+    viewModelOf(::HistoryViewModel)
+    viewModel { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get()) }
+    viewModel { (itemId: Long?) -> AddEditItemViewModel(itemId, get(), get()) }
 }
 
 // ==================== SHARED MODULES ====================

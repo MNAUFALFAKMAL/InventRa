@@ -1,16 +1,17 @@
 package com.example.inventra.presentation.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.inventra.presentation.screens.addedit.AddEditItemScreen
+import com.example.inventra.presentation.screens.catalog.CatalogScreen
+import com.example.inventra.presentation.screens.dashboard.DashboardScreen
+import com.example.inventra.presentation.screens.detail.ItemDetailScreen
+import com.example.inventra.presentation.screens.history.HistoryScreen
 
 @Composable
 fun AppNavHost(
@@ -25,33 +26,39 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable<Route.Dashboard> {
-            PlaceholderScreen("Dashboard Screen")
+            DashboardScreen(
+                onNavigateToAddItem = { navigationActions.navigateToAddEditItem() },
+                onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) },
+                onNavigateToCatalog = { navigationActions.navigateToCatalog() }
+            )
         }
         
         composable<Route.Catalog> {
-            PlaceholderScreen("Catalog Screen")
+            CatalogScreen(
+                onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) }
+            )
         }
 
         composable<Route.History> {
-            PlaceholderScreen("History Screen")
+            HistoryScreen()
         }
         
         composable<Route.ItemDetail> { backStackEntry ->
             val route: Route.ItemDetail = backStackEntry.toRoute()
-            PlaceholderScreen("Item Detail Screen for ID: ${route.itemId}")
+            ItemDetailScreen(
+                itemId = route.itemId,
+                onNavigateBack = { navigationActions.navigateBack() },
+                onNavigateToEdit = { itemId -> navigationActions.navigateToAddEditItem(itemId) }
+            )
         }
         
         composable<Route.AddEditItem> { backStackEntry ->
             val route: Route.AddEditItem = backStackEntry.toRoute()
-            PlaceholderScreen("Add/Edit Item Screen for ID: ${route.itemId ?: "New"}")
+            AddEditItemScreen(
+                itemId = route.itemId,
+                onNavigateBack = { navigationActions.navigateBack() }
+            )
         }
-    }
-}
-
-@Composable
-fun PlaceholderScreen(name: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = name)
     }
 }
 
