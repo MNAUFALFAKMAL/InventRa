@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Inventory
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Schedule
@@ -31,6 +32,7 @@ fun DashboardScreen(
     onNavigateToAddItem: () -> Unit,
     onNavigateToDetail: (Long) -> Unit,
     onNavigateToCatalog: () -> Unit,
+    onNavigateToAI: () -> Unit,
     viewModel: DashboardViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -46,6 +48,13 @@ fun DashboardScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToAI) {
+                        Icon(
+                            Icons.Outlined.AutoAwesome,
+                            contentDescription = "AI Assistant",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     IconButton(onClick = {}) {
                         Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
                     }
@@ -112,6 +121,10 @@ fun DashboardScreen(
                     }
 
                     item {
+                        AIBannerCard(onNavigateToAI = onNavigateToAI)
+                    }
+
+                    item {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -173,7 +186,7 @@ fun DashboardScreen(
                                         Text("Peminjam: ${record.borrowerName}", style = MaterialTheme.typography.bodySmall)
                                     }
                                     Text(
-                                        "Hingga: ${record.dueDate}", // Simplification, should format date
+                                        "Hingga: ${record.dueDate}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
@@ -188,6 +201,50 @@ fun DashboardScreen(
                     Text(state.message)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AIBannerCard(onNavigateToAI: () -> Unit) {
+    Card(
+        onClick = onNavigateToAI,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.onPrimary
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "AI Inventaris",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Text(
+                    "Analisis stok, saran pengadaan & laporan peminjaman",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                )
+            }
+            Text(
+                "Buka →",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
     }
 }

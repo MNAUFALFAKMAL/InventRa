@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.inventra.presentation.screens.addedit.AddEditItemScreen
+import com.example.inventra.presentation.screens.ai.AIInventoryScreen
 import com.example.inventra.presentation.screens.catalog.CatalogScreen
 import com.example.inventra.presentation.screens.dashboard.DashboardScreen
 import com.example.inventra.presentation.screens.detail.ItemDetailScreen
@@ -19,7 +20,7 @@ fun AppNavHost(
     modifier: Modifier = Modifier
 ) {
     val navigationActions = createNavigationActions(navController)
-    
+
     NavHost(
         navController = navController,
         startDestination = Route.Dashboard,
@@ -29,10 +30,11 @@ fun AppNavHost(
             DashboardScreen(
                 onNavigateToAddItem = { navigationActions.navigateToAddEditItem() },
                 onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) },
-                onNavigateToCatalog = { navigationActions.navigateToCatalog() }
+                onNavigateToCatalog = { navigationActions.navigateToCatalog() },
+                onNavigateToAI = { navigationActions.navigateToAIAssistant() }
             )
         }
-        
+
         composable<Route.Catalog> {
             CatalogScreen(
                 onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) }
@@ -42,7 +44,13 @@ fun AppNavHost(
         composable<Route.History> {
             HistoryScreen()
         }
-        
+
+        composable<Route.AIAssistant> {
+            AIInventoryScreen(
+                onNavigateBack = { navigationActions.navigateBack() }
+            )
+        }
+
         composable<Route.ItemDetail> { backStackEntry ->
             val route: Route.ItemDetail = backStackEntry.toRoute()
             ItemDetailScreen(
@@ -51,7 +59,7 @@ fun AppNavHost(
                 onNavigateToEdit = { itemId -> navigationActions.navigateToAddEditItem(itemId) }
             )
         }
-        
+
         composable<Route.AddEditItem> { backStackEntry ->
             val route: Route.AddEditItem = backStackEntry.toRoute()
             AddEditItemScreen(
@@ -66,6 +74,7 @@ interface NavigationActions {
     fun navigateToDashboard()
     fun navigateToCatalog()
     fun navigateToHistory()
+    fun navigateToAIAssistant()
     fun navigateToItemDetail(itemId: Long)
     fun navigateToAddEditItem(itemId: Long? = null)
     fun navigateBack()
@@ -78,7 +87,7 @@ private fun createNavigationActions(navController: NavHostController): Navigatio
                 popUpTo(Route.Dashboard) { inclusive = true }
             }
         }
-        
+
         override fun navigateToCatalog() {
             navController.navigate(Route.Catalog)
         }
@@ -86,11 +95,15 @@ private fun createNavigationActions(navController: NavHostController): Navigatio
         override fun navigateToHistory() {
             navController.navigate(Route.History)
         }
-        
+
+        override fun navigateToAIAssistant() {
+            navController.navigate(Route.AIAssistant)
+        }
+
         override fun navigateToItemDetail(itemId: Long) {
             navController.navigate(Route.ItemDetail(itemId))
         }
-        
+
         override fun navigateToAddEditItem(itemId: Long?) {
             navController.navigate(Route.AddEditItem(itemId))
         }

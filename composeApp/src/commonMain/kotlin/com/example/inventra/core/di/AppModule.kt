@@ -15,6 +15,7 @@ import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
 import com.example.inventra.domain.usecase.*
 import com.example.inventra.presentation.screens.addedit.AddEditItemViewModel
+import com.example.inventra.presentation.screens.ai.AIInventoryViewModel
 import com.example.inventra.presentation.screens.catalog.CatalogViewModel
 import com.example.inventra.presentation.screens.dashboard.DashboardViewModel
 import com.example.inventra.presentation.screens.detail.ItemDetailViewModel
@@ -66,9 +67,6 @@ val useCaseModule = module {
     singleOf(::SearchItemsUseCase)
     singleOf(::SaveItemUseCase)
     singleOf(::DeleteItemUseCase)
-    singleOf(::SummarizeNoteUseCase)
-    singleOf(::ImproveWritingUseCase)
-    singleOf(::GenerateIdeasUseCase)
 }
 
 // ==================== VIEWMODEL MODULE ====================
@@ -77,6 +75,7 @@ val viewModelModule = module {
     viewModelOf(::DashboardViewModel)
     viewModelOf(::CatalogViewModel)
     viewModelOf(::HistoryViewModel)
+    viewModelOf(::AIInventoryViewModel)
     viewModel { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get()) }
     viewModel { (itemId: Long?) -> AddEditItemViewModel(itemId, get(), get()) }
 }
