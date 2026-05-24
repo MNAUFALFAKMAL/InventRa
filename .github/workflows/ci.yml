@@ -1,4 +1,4 @@
-name: CI
+name: Build Project
 
 on:
   push:
@@ -16,7 +16,8 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Build with Gradle
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+
+      # Gunakan action ini karena ia TIDAK memvalidasi wrapper .jar
+      - uses: gradle/gradle-build-action@v3
+        with:
+          arguments: assembleDebug
