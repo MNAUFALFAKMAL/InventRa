@@ -11,7 +11,7 @@ jobs:
     name: Build & Test (Android)
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Memperbaiki peringatan Node.js
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Mengatasi peringatan Node.js
 
     steps:
       - name: Checkout repository
@@ -23,7 +23,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Menggantikan validasi manual dengan setup-gradle yang lebih baru
+      # Menggunakan setup-gradle v4 yang lebih modern dan mendukung Node 24
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -34,7 +34,7 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
           echo "GEMINI_API_KEY=" >> local.properties
 
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Run unit tests
