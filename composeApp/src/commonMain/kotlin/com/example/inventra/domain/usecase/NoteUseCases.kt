@@ -18,7 +18,7 @@ class GetAllNotesUseCase(
             sortedPinned + sortedUnpinned
         }
     }
-    
+
     private fun sortNotes(notes: List<Note>, sortBy: NoteSortBy): List<Note> {
         return when (sortBy) {
             NoteSortBy.TITLE_ASC -> notes.sortedBy { it.title.lowercase() }
@@ -68,14 +68,14 @@ class SaveNoteUseCase(
             if (note.title.isBlank() && note.content.isBlank()) {
                 return Result.failure(IllegalArgumentException("Note tidak boleh kosong"))
             }
-            
+
             val id = if (note.id == 0L) {
                 repository.insertNote(note)
             } else {
                 repository.updateNote(note)
                 note.id
             }
-            
+
             Result.success(id)
         } catch (e: Exception) {
             Result.failure(e)

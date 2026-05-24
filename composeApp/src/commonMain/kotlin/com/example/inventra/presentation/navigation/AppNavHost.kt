@@ -1,16 +1,16 @@
 package com.example.inventra.presentation.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.inventra.presentation.screens.addnote.AddNoteScreen
-import com.example.inventra.presentation.screens.ai.AIAssistantScreen
-import com.example.inventra.presentation.screens.detail.NoteDetailScreen
-import com.example.inventra.presentation.screens.home.HomeScreen
 
 @Composable
 fun AppNavHost(
@@ -21,71 +21,71 @@ fun AppNavHost(
     
     NavHost(
         navController = navController,
-        startDestination = Route.Home,
+        startDestination = Route.Dashboard,
         modifier = modifier
     ) {
-        composable<Route.Home> {
-            HomeScreen(
-                onNavigateToAddNote = { navigationActions.navigateToAddNote() },
-                onNavigateToDetail = { noteId -> navigationActions.navigateToNoteDetail(noteId) },
-                onNavigateToAI = { navigationActions.navigateToAIAssistant() }
-            )
+        composable<Route.Dashboard> {
+            PlaceholderScreen("Dashboard Screen")
         }
         
-        composable<Route.AddNote> { backStackEntry ->
-            val route: Route.AddNote = backStackEntry.toRoute()
-            AddNoteScreen(
-                noteId = route.noteId,
-                onNavigateBack = { navigationActions.navigateBack() },
-                onNavigateToAI = { text ->
-                    navigationActions.navigateToAIAssistant(
-                        noteId = route.noteId,
-                        initialText = text
-                    )
-                }
-            )
+        composable<Route.Catalog> {
+            PlaceholderScreen("Catalog Screen")
+        }
+
+        composable<Route.History> {
+            PlaceholderScreen("History Screen")
         }
         
-        composable<Route.NoteDetail> { backStackEntry ->
-            val route: Route.NoteDetail = backStackEntry.toRoute()
-            NoteDetailScreen(
-                noteId = route.noteId,
-                onNavigateBack = { navigationActions.navigateBack() },
-                onNavigateToEdit = { navigationActions.navigateToAddNote(route.noteId) },
-                onShare = { _ -> }
-            )
+        composable<Route.ItemDetail> { backStackEntry ->
+            val route: Route.ItemDetail = backStackEntry.toRoute()
+            PlaceholderScreen("Item Detail Screen for ID: ${route.itemId}")
         }
         
-        composable<Route.AIAssistant> { backStackEntry ->
-            val route: Route.AIAssistant = backStackEntry.toRoute()
-            AIAssistantScreen(
-                noteId = route.noteId,
-                initialText = route.initialText,
-                onNavigateBack = { navigationActions.navigateBack() },
-                onApplyResult = null
-            )
+        composable<Route.AddEditItem> { backStackEntry ->
+            val route: Route.AddEditItem = backStackEntry.toRoute()
+            PlaceholderScreen("Add/Edit Item Screen for ID: ${route.itemId ?: "New"}")
         }
     }
 }
 
+@Composable
+fun PlaceholderScreen(name: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = name)
+    }
+}
+
+interface NavigationActions {
+    fun navigateToDashboard()
+    fun navigateToCatalog()
+    fun navigateToHistory()
+    fun navigateToItemDetail(itemId: Long)
+    fun navigateToAddEditItem(itemId: Long? = null)
+    fun navigateBack()
+}
+
 private fun createNavigationActions(navController: NavHostController): NavigationActions {
     return object : NavigationActions {
-        override fun navigateToHome() {
-            navController.navigate(Route.Home) {
-                popUpTo(Route.Home) { inclusive = true }
+        override fun navigateToDashboard() {
+            navController.navigate(Route.Dashboard) {
+                popUpTo(Route.Dashboard) { inclusive = true }
             }
         }
         
-        override fun navigateToAddNote(noteId: Long?) {
-            navController.navigate(Route.AddNote(noteId))
+        override fun navigateToCatalog() {
+            navController.navigate(Route.Catalog)
+        }
+
+        override fun navigateToHistory() {
+            navController.navigate(Route.History)
         }
         
-        override fun navigateToNoteDetail(noteId: Long) {
-            navController.navigate(Route.NoteDetail(noteId))
+        override fun navigateToItemDetail(itemId: Long) {
+            navController.navigate(Route.ItemDetail(itemId))
         }
         
-        override fun navigateToAIAssistant(noteId: Long?, initialText: String?) {
-            navController.navigate(Route.AIAssistant(noteId, initialText))
+        override fun navigateToAddEditItem(itemId: Long?) {
+            navController.navigate(Route.AddEditItem(itemId))
         }
 
         override fun navigateBack() {
