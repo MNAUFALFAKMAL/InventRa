@@ -127,4 +127,7 @@ InventRa membutuhkan Gemini API Key untuk fitur AI.
 
 ---
 
+## 🎥 Video Demo:
+Anda dapat melihat demo aplikasi pada link berikut: https://drive.google.com/file/d/1-H1Nh0JPQjPFbAODvzFAu8Zf7AJ7mHbc/view?usp=drive_link
+
 *InventRa — Solusi Inventaris Digital untuk HMIF ITERA*
