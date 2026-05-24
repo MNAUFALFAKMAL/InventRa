@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'project/123140062_123140132_InventRa' ]
   pull_request:
     branches: [ main, develop ]
 
