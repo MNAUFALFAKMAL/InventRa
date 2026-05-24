@@ -1,10 +1,9 @@
 package com.example.inventra.data.repository
 
 import app.cash.turbine.test
-import com.example.inventra.domain.model.Item
-import com.example.inventra.domain.model.ItemCategory
-import com.example.inventra.domain.model.ItemCondition
-import com.example.inventra.domain.repository.ItemRepository
+import com.example.inventra.domain.model.Note
+import com.example.inventra.domain.model.NoteCategory
+import com.example.inventra.domain.model.NoteColor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -17,141 +16,245 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class ItemRepositoryTest {
+/**
+ * Unit Tests untuk NoteRepository
+ *
+ * Testing Guidelines:
+ * 1. Gunakan FakeRepository untuk isolasi
+ * 2. Test satu behavior per test
+ * 3. Gunakan Turbine untuk test Flow
+ * 4. Follow AAA pattern (Arrange, Act, Assert)
+ */
+class NoteRepositoryTest {
     
-    private lateinit var repository: FakeItemRepository
+    private lateinit var repository: FakeNoteRepository
     
     @BeforeTest
     fun setup() {
-        repository = FakeItemRepository()
+        repository = FakeNoteRepository()
     }
-    
+
+    // ==================== INSERT TESTS ====================
+
     @Test
-    fun `insertItem should return new item id`() = runTest {
-        val item = createTestItem(name = "Test Item")
-        val id = repository.insertItem(item)
+    fun `insertNote should return new note id`() = runTest {
+        // Arrange
+        val note = createTestNote(title = "Test Note")
+
+        // Act
+        val id = repository.insertNote(note)
+
+        // Assert
         assertTrue(id > 0)
     }
-    
+
     @Test
-    fun `insertItem should add item to list`() = runTest {
-        val item = createTestItem(name = "New Item")
-        repository.insertItem(item)
-        
-        repository.getAllItems().test {
-            val items = awaitItem()
-            assertEquals(1, items.size)
-            assertEquals("New Item", items.first().name)
+    fun `insertNote should add note to list`() = runTest {
+        // Arrange
+        val note = createTestNote(title = "New Note")
+
+        // Act
+        repository.insertNote(note)
+
+        // Assert
+        repository.getAllNotes().test {
+            val notes = awaitItem()
+            assertEquals(1, notes.size)
+            assertEquals("New Note", notes.first().title)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // ==================== GET TESTS ====================
+
+    @Test
+    fun `getAllNotes should return all notes`() = runTest {
+        // Arrange
+        repository.insertNote(createTestNote(title = "Note 1"))
+        repository.insertNote(createTestNote(title = "Note 2"))
+
+        // Act & Assert
+        repository.getAllNotes().test {
+            val notes = awaitItem()
+            assertEquals(2, notes.size)
             cancelAndIgnoreRemainingEvents()
         }
     }
     
     @Test
-    fun `getAllItems should return all items`() = runTest {
-        repository.insertItem(createTestItem(name = "Item 1"))
-        repository.insertItem(createTestItem(name = "Item 2"))
+    fun `getNoteById should return correct note`() = runTest {
+        // Arrange
+        val id = repository.insertNote(createTestNote(title = "Find Me"))
         
-        repository.getAllItems().test {
-            val items = awaitItem()
-            assertEquals(2, items.size)
+        // Act & Assert
+        repository.getNoteById(id).test {
+            val note = awaitItem()
+            assertNotNull(note)
+            assertEquals("Find Me", note.title)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `getNoteById should return null for non-existent id`() = runTest {
+        // Act & Assert
+        repository.getNoteById(999).test {
+            val note = awaitItem()
+            assertEquals(null, note)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // ==================== SEARCH TESTS ====================
+
+    @Test
+    fun `searchNotes should find notes by title`() = runTest {
+        // Arrange
+        repository.insertNote(createTestNote(title = "Kotlin Tutorial"))
+        repository.insertNote(createTestNote(title = "Java Guide"))
+        
+        // Act & Assert
+        repository.searchNotes("Kotlin").test {
+            val notes = awaitItem()
+            assertEquals(1, notes.size)
+            assertEquals("Kotlin Tutorial", notes.first().title)
             cancelAndIgnoreRemainingEvents()
         }
     }
     
     @Test
-    fun `getItemById should return correct item`() = runTest {
-        val id = repository.insertItem(createTestItem(name = "Find Me"))
+    fun `searchNotes should find notes by content`() = runTest {
+        // Arrange
+        repository.insertNote(createTestNote(title = "Recipe", content = "Add tomatoes"))
+        repository.insertNote(createTestNote(title = "Shopping", content = "Buy milk"))
         
-        repository.getItemById(id).test {
-            val item = awaitItem()
-            assertNotNull(item)
-            assertEquals("Find Me", item.name)
+        // Act & Assert
+        repository.searchNotes("tomatoes").test {
+            val notes = awaitItem()
+            assertEquals(1, notes.size)
+            assertEquals("Recipe", notes.first().title)
             cancelAndIgnoreRemainingEvents()
         }
     }
-    
+
+    // ==================== DELETE TESTS ====================
+
     @Test
-    fun `searchItems should find items by name`() = runTest {
-        repository.insertItem(createTestItem(name = "Projector"))
-        repository.insertItem(createTestItem(name = "Marker"))
+    fun `deleteNote should remove note from list`() = runTest {
+        // Arrange
+        val id = repository.insertNote(createTestNote(title = "To Delete"))
+
+        // Act
+        repository.deleteNote(id)
         
-        repository.searchItems("Project").test {
-            val items = awaitItem()
-            assertEquals(1, items.size)
-            assertEquals("Projector", items.first().name)
+        // Assert
+        repository.getAllNotes().test {
+            val notes = awaitItem()
+            assertTrue(notes.isEmpty())
             cancelAndIgnoreRemainingEvents()
         }
     }
-    
+
+    // ==================== UPDATE TESTS ====================
+
     @Test
-    fun `deleteItem should remove item from list`() = runTest {
-        val id = repository.insertItem(createTestItem(name = "To Delete"))
-        repository.deleteItem(id)
+    fun `updateNote should modify existing note`() = runTest {
+        // Arrange
+        val id = repository.insertNote(createTestNote(title = "Original"))
+
+        // Act
+        val updatedNote = createTestNote(id = id, title = "Updated")
+        repository.updateNote(updatedNote)
         
-        repository.getAllItems().test {
-            val items = awaitItem()
-            assertTrue(items.isEmpty())
+        // Assert
+        repository.getNoteById(id).test {
+            val note = awaitItem()
+            assertEquals("Updated", note?.title)
             cancelAndIgnoreRemainingEvents()
         }
     }
-    
-    private fun createTestItem(
+
+    // ==================== HELPER FUNCTIONS ====================
+
+    private fun createTestNote(
         id: Long = 0,
-        name: String = "Test",
-        category: ItemCategory = ItemCategory.OTHER
-    ): Item {
-        return Item(
+        title: String = "Test",
+        content: String = "Content",
+        category: NoteCategory = NoteCategory.GENERAL
+    ): Note {
+        return Note(
             id = id,
-            name = name,
+            title = title,
+            content = content,
             category = category,
-            location = "Lab",
-            totalStock = 10,
-            availableStock = 10,
-            condition = ItemCondition.GOOD,
-            picName = "Naufal",
+            color = NoteColor.DEFAULT,
+            isPinned = false,
             createdAt = Clock.System.now(),
             updatedAt = Clock.System.now()
         )
     }
 }
 
-class FakeItemRepository : ItemRepository {
-    private val items = MutableStateFlow<List<Item>>(emptyList())
+/**
+ * Fake Repository untuk Testing
+ *
+ * In-memory implementation yang tidak bergantung pada database.
+ * Digunakan untuk unit testing tanpa side effects.
+ */
+class FakeNoteRepository : NoteRepository {
+
+    private val notes = MutableStateFlow<List<Note>>(emptyList())
     private var nextId = 1L
-    
-    override fun getAllItems(): Flow<List<Item>> = items
-    
-    override fun getItemsByCategory(category: ItemCategory): Flow<List<Item>> {
-        return items.map { list -> list.filter { it.category == category } }
+
+    override fun getAllNotes(): Flow<List<Note>> = notes
+
+    override fun getPinnedNotes(): Flow<List<Note>> {
+        return notes.map { list -> list.filter { it.isPinned } }
     }
     
-    override fun searchItems(query: String): Flow<List<Item>> {
-        return items.map { list ->
+    override fun getNotesByCategory(category: NoteCategory): Flow<List<Note>> {
+        return notes.map { list -> list.filter { it.category == category } }
+    }
+    
+    override fun searchNotes(query: String): Flow<List<Note>> {
+        return notes.map { list ->
             list.filter {
-                it.name.contains(query, ignoreCase = true) ||
-                it.description.contains(query, ignoreCase = true)
+                it.title.contains(query, ignoreCase = true) ||
+                it.content.contains(query, ignoreCase = true)
             }
         }
     }
     
-    override fun getItemById(id: Long): Flow<Item?> {
-        return items.map { list -> list.find { it.id == id } }
+    override fun getNoteById(id: Long): Flow<Note?> {
+        return notes.map { list -> list.find { it.id == id } }
     }
     
-    override suspend fun insertItem(item: Item): Long {
+    override suspend fun insertNote(note: Note): Long {
         val id = nextId++
-        val newItem = item.copy(id = id)
-        items.update { it + newItem }
+        val newNote = note.copy(id = id)
+        notes.update { it + newNote }
         return id
     }
+
+    override suspend fun updateNote(note: Note) {
+        notes.update { list ->
+            list.map { if (it.id == note.id) note else it }
+        }
+    }
+
+    override suspend fun deleteNote(id: Long) {
+        notes.update { list -> list.filter { it.id != id } }
+    }
     
-    override suspend fun updateItem(item: Item) {
-        items.update { list ->
-            list.map { if (it.id == item.id) item else it }
+    override suspend fun togglePinNote(id: Long) {
+        notes.update { list ->
+            list.map {
+                if (it.id == id) it.copy(isPinned = !it.isPinned) else it
+            }
         }
     }
     
-    override suspend fun deleteItem(id: Long) {
-        items.update { list -> list.filter { it.id != id } }
+    override suspend fun deleteNotes(ids: List<Long>) {
+        notes.update { list -> list.filter { it.id !in ids } }
     }
 }
