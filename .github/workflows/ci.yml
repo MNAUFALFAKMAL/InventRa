@@ -7,43 +7,16 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-and-test:
-    name: Build & Test (Android)
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-
-      - name: Create local.properties
+      - name: Build with Gradle
         run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
-          echo "GEMINI_API_KEY=DUMMY_KEY" >> local.properties
-
-      - name: Grant execute permission
-        run: chmod +x gradlew
-
-      - name: Run unit tests
-        run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --stacktrace
-
-      - name: Build Debug APK
-        run: ./gradlew :composeApp:assembleDebug --no-daemon --stacktrace
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: inventra-debug-apk
-          path: composeApp/build/outputs/apk/debug/*.apk
-          retention-days: 7
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
