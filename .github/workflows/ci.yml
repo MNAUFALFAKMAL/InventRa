@@ -22,43 +22,33 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      # 3. Buat local.properties agar build tidak gagal karena missing file
+      # 3. Setup Gradle (Menggantikan validasi manual & membuat wrapper jika hilang)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7' # Sesuaikan dengan versi yang ada di gradle-wrapper.properties
+          cache-read-only: false
+
+      # 4. Buat local.properties agar build tidak gagal karena missing file
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
           echo "GEMINI_API_KEY=" >> local.properties
 
-      # 4. Generate Gradle Wrapper otomatis di server GitHub (Bypass Git lokal)
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper
-
       # 5. Izinkan gradlew dieksekusi
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 6. Cache Gradle & KMP Native dependencies
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.konan
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # 7. Run unit tests (commonTest + androidTest)
+      # 6. Run unit tests (commonTest + androidTest)
       - name: Run unit tests
         run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --stacktrace
 
-      # 8. Build APK debug
+      # 7. Build APK debug
       - name: Build Debug APK
         run: ./gradlew :composeApp:assembleDebug --no-daemon --stacktrace
 
-      # 9. Upload APK sebagai artifact
+      # 8. Upload APK sebagai artifact
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         if: success()
