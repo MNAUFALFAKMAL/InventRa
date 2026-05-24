@@ -18,7 +18,7 @@ actual class DatabaseDriverFactory(
         return AndroidSqliteDriver(
             schema = InventRaDatabase.Schema,
             context = context,
-            name = "InventRa.db"
+            name = "Inventra.db"
         )
     }
 }
