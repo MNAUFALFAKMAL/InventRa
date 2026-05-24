@@ -21,6 +21,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # Menggunakan setup-gradle untuk menangani environment tanpa perlu validasi manual
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -34,12 +35,8 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      # Debugging: List file untuk memastikan struktur benar sebelum build
-      - name: Verify structure
-        run: ls -R composeApp/
-
       - name: Run unit tests
-        run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --stacktrace --refresh-dependencies
+        run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Build Debug APK
         run: ./gradlew :composeApp:assembleDebug --no-daemon --stacktrace
