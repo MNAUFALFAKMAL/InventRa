@@ -33,6 +33,7 @@ fun DashboardScreen(
     onNavigateToDetail: (Long) -> Unit,
     onNavigateToCatalog: () -> Unit,
     onNavigateToAI: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     viewModel: DashboardViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -155,11 +156,20 @@ fun DashboardScreen(
                     }
 
                     item {
-                        Text(
-                            "Status Peminjaman Aktif",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Status Peminjaman Aktif",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            TextButton(onClick = onNavigateToHistory) {
+                                Text("Lihat Riwayat")
+                            }
+                        }
                     }
 
                     if (state.activeBorrowings.isEmpty()) {

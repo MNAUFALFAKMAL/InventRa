@@ -31,7 +31,8 @@ fun AppNavHost(
                 onNavigateToAddItem = { navigationActions.navigateToAddEditItem() },
                 onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) },
                 onNavigateToCatalog = { navigationActions.navigateToCatalog() },
-                onNavigateToAI = { navigationActions.navigateToAIAssistant() }
+                onNavigateToAI = { navigationActions.navigateToAIAssistant() },
+                onNavigateToHistory = { navigationActions.navigateToHistory() }
             )
         }
 
