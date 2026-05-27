@@ -3,280 +3,182 @@ package com.example.inventra.presentation.screens.detail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.inventra.presentation.components.LoadingIndicator
-import com.example.inventra.presentation.components.StatusBadge
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import com.example.inventra.presentation.components.GlassCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemDetailScreen(
-    itemId: Long,
-    onNavigateBack: () -> Unit,
-    onNavigateToEdit: (Long) -> Unit,
-    viewModel: ItemDetailViewModel = koinViewModel { parametersOf(itemId) }
+    onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showBorrowDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detail Barang") },
+                title = { Text("Detail", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.secondary)
                     }
                 },
-                actions = {
-                    IconButton(onClick = { onNavigateToEdit(itemId) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
-                    }
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                }
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
             )
         },
         bottomBar = {
-            if (uiState is ItemDetailUiState.Success) {
-                val item = (uiState as ItemDetailUiState.Success).item
-                Surface(
-                    tonalElevation = 8.dp,
-                    shadowElevation = 8.dp
+            // Action Buttons Fixed di Bawah
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    OutlinedButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Hubungi PIC")
+                    }
                     Button(
-                        onClick = { showBorrowDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        enabled = item.isBorrowable,
-                        shape = MaterialTheme.shapes.medium
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                     ) {
-                        Text(if (item.isBorrowable) "Request to Borrow" else "Out of Stock")
+                        Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pinjam")
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        when (val state = uiState) {
-            is ItemDetailUiState.Loading -> LoadingIndicator()
-            is ItemDetailUiState.NotFound -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Barang tidak ditemukan")
-                }
-            }
-            is ItemDetailUiState.Success -> {
-                val item = state.item
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .verticalScroll(rememberScrollState())
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            // Image Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(4f / 3f)
+                    .background(Color.LightGray, RoundedCornerShape(12.dp)) // Placeholder Image
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    // Hero area
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Placeholder for Image
-                        Icon(
-                            Icons.Outlined.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = item.category.displayName,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            StatusBadge(status = item.statusLabel)
-                        }
-
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                        DetailSection(
-                            icon = Icons.Outlined.LocationOn,
-                            label = "Lokasi Penyimpanan",
-                            value = item.location
-                        )
-
-                        DetailSection(
-                            icon = Icons.Outlined.Person,
-                            label = "Penanggung Jawab (PIC)",
-                            value = item.picName
-                        )
-
-                        Text(
-                            "Deskripsi",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                        )
-                        Text(
-                            item.description.ifBlank { "Tidak ada deskripsi." },
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    "Informasi Peminjaman",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "• Maksimal peminjaman 2 hari\n• Denda Rp 10.000/hari jika terlambat",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
+                    Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("AVAILABLE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                     }
                 }
             }
-            is ItemDetailUiState.Error -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(state.message)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Title & Info
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
+                    Text("LOGISTIK", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("SKU: HMIF-L-042", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
+
+            Text("Jetson Nano Developer Kit", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Sekre HMIF - Cabinet B1", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Specs Card
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Memory, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Spesifikasi Teknis", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SpecRow("GPU", "128-core Maxwell")
+                    SpecRow("CPU", "Quad-core ARM A57")
+                    SpecRow("Memory", "4 GB 64-bit LPDDR4")
+                    SpecRow("Storage", "microSD", isLast = true)
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Policy Card
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Policy, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Kebijakan Peminjaman", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PolicyItem(Icons.Default.CalendarToday, "Durasi Maksimal", "3 Hari Kalender")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    PolicyItem(Icons.Default.Payments, "Denda Keterlambatan", "Rp 5.000 / Hari", isError = true)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom bar
         }
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Hapus Barang") },
-            text = { Text("Apakah Anda yakin ingin menghapus barang ini?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteItem(onNavigateBack)
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Hapus")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal")
-                }
-            }
-        )
-    }
-
-    if (showBorrowDialog) {
-        var borrowerName by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showBorrowDialog = false },
-            title = { Text("Pinjam Barang") },
-            text = {
-                Column {
-                    Text("Masukkan nama peminjam:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = borrowerName,
-                        onValueChange = { borrowerName = it },
-                        label = { Text("Nama") },
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (borrowerName.isNotBlank()) {
-                            viewModel.borrowItem(borrowerName, onNavigateBack)
-                            showBorrowDialog = false
-                        }
-                    },
-                    enabled = borrowerName.isNotBlank()
-                ) {
-                    Text("Pinjam")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBorrowDialog = false }) {
-                    Text("Batal")
-                }
-            }
-        )
     }
 }
 
 @Composable
-private fun DetailSection(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String
-) {
+fun SpecRow(label: String, value: String, isLast: Boolean = false) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )
+        Text(label, color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
+        Text(value, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+    }
+    if (!isLast) {
+        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    }
+}
+
+@Composable
+fun PolicyItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, desc: String, isError: Boolean = false) {
+    val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp).size(20.dp))
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+            Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
 }

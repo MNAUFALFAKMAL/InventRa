@@ -1,67 +1,83 @@
 package com.example.inventra.presentation.screens.history
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.inventra.presentation.components.LoadingIndicator
-import com.example.inventra.presentation.components.StatusBadge
-import org.koin.compose.viewmodel.koinViewModel
+import com.example.inventra.presentation.components.InventRaBottomNav
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
-    viewModel: HistoryViewModel = koinViewModel()
+    currentRoute: String,
+    onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Aktif", "Selesai")
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Riwayat Peminjaman", fontWeight = FontWeight.Bold) }
+                title = { Text("HMIF Inventaris", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary) },
+                actions = {
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = MaterialTheme.colorScheme.secondary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             )
-        }
+        },
+        // MEMASANG BOTTOM NAV
+        bottomBar = {
+            InventRaBottomNav(currentRoute = currentRoute, onNavigate = onNavigate)
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        when (val state = uiState) {
-            is HistoryUiState.Loading -> LoadingIndicator()
-            is HistoryUiState.Empty -> {
-                Box(Modifier.fillMaxSize().padding(paddingValues), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text("Belum ada riwayat peminjaman")
-                }
-            }
-            is HistoryUiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.records) { record ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(record.itemName, fontWeight = FontWeight.Bold)
-                                    StatusBadge(status = record.status.name)
-                                }
-                                Text("Peminjam: ${record.borrowerName}", style = MaterialTheme.typography.bodyMedium)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Pinjam: ${record.borrowDate}", style = MaterialTheme.typography.bodySmall)
-                                Text("Kembali: ${record.returnDate ?: "Belum dikembalikan"}", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            Text("Borrowing History", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Track your items and scheduled returns.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Alert Denda
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Default.Warning, contentDescription = "Warning", tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Denda Aktif", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("You have 1 overdue item. Please return it immediately.", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Komponen dummy (Isi logic history item seperti kode sebelumnya di sini)
+            Text("Daftar Peminjaman akan tampil di sini", color = MaterialTheme.colorScheme.outline)
+
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }

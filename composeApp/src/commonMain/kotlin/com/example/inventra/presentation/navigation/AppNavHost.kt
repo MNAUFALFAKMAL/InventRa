@@ -1,116 +1,120 @@
 package com.example.inventra.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.example.inventra.presentation.screens.addedit.AddEditItemScreen
 import com.example.inventra.presentation.screens.ai.AIInventoryScreen
+import com.example.inventra.presentation.screens.auth.LoginScreen
 import com.example.inventra.presentation.screens.catalog.CatalogScreen
 import com.example.inventra.presentation.screens.dashboard.DashboardScreen
 import com.example.inventra.presentation.screens.detail.ItemDetailScreen
 import com.example.inventra.presentation.screens.history.HistoryScreen
+import com.example.inventra.presentation.screens.profile.ProfileScreen
 
 @Composable
 fun AppNavHost(
+    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    modifier: Modifier = Modifier
+    startDestination: String = Routes.Login.route
 ) {
-    val navigationActions = createNavigationActions(navController)
+    // Mendapatkan route saat ini untuk mengontrol state Bottom Navigation
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     NavHost(
         navController = navController,
-        startDestination = Route.Dashboard,
+        startDestination = startDestination,
         modifier = modifier
     ) {
-        composable<Route.Dashboard> {
+        composable(Routes.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Routes.Dashboard.route) {
+                        popUpTo(Routes.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.Dashboard.route) {
             DashboardScreen(
-                onNavigateToAddItem = { navigationActions.navigateToAddEditItem() },
-                onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) },
-                onNavigateToCatalog = { navigationActions.navigateToCatalog() },
-                onNavigateToAI = { navigationActions.navigateToAIAssistant() },
-                onNavigateToHistory = { navigationActions.navigateToHistory() }
+                currentRoute = currentRoute ?: Routes.Dashboard.route,
+                onNavigate = { route -> navigateBottomNav(navController, route) },
+                onNavigateToAddItem = { navController.navigate(Routes.AddEditItem.route) }
             )
         }
 
-        composable<Route.Catalog> {
+        composable(Routes.Catalog.route) {
             CatalogScreen(
-                onNavigateToDetail = { itemId -> navigationActions.navigateToItemDetail(itemId) }
+                currentRoute = currentRoute ?: Routes.Catalog.route,
+                onNavigate = { route -> navigateBottomNav(navController, route) },
+                onNavigateToDetail = { itemId ->
+                    navController.navigate(Routes.ItemDetail.createRoute(itemId))
+                },
+                onNavigateToAddItem = { navController.navigate(Routes.AddEditItem.route) }
             )
         }
 
-        composable<Route.History> {
-            HistoryScreen()
-        }
-
-        composable<Route.AIAssistant> {
-            AIInventoryScreen(
-                onNavigateBack = { navigationActions.navigateBack() }
-            )
-        }
-
-        composable<Route.ItemDetail> { backStackEntry ->
-            val route: Route.ItemDetail = backStackEntry.toRoute()
+        composable(Routes.ItemDetail.route) { backStackEntry ->
+            // Mengambil argumen itemId jika diperlukan oleh ViewModel
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
             ItemDetailScreen(
-                itemId = route.itemId,
-                onNavigateBack = { navigationActions.navigateBack() },
-                onNavigateToEdit = { itemId -> navigationActions.navigateToAddEditItem(itemId) }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable<Route.AddEditItem> { backStackEntry ->
-            val route: Route.AddEditItem = backStackEntry.toRoute()
+        composable(Routes.History.route) {
+            HistoryScreen(
+                currentRoute = currentRoute ?: Routes.History.route,
+                onNavigate = { route -> navigateBottomNav(navController, route) }
+            )
+        }
+
+        composable(Routes.AskAI.route) {
+            AIInventoryScreen(
+                currentRoute = currentRoute ?: Routes.AskAI.route,
+                onNavigate = { route -> navigateBottomNav(navController, route) }
+            )
+        }
+
+        composable(Routes.Profile.route) {
+            ProfileScreen(
+                currentRoute = currentRoute ?: Routes.Profile.route,
+                onNavigate = { route -> navigateBottomNav(navController, route) },
+                onLogoutClick = {
+                    // Membersihkan seluruh tumpukan layar dan kembali ke Login
+                    navController.navigate(Routes.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.AddEditItem.route) {
             AddEditItemScreen(
-                itemId = route.itemId,
-                onNavigateBack = { navigationActions.navigateBack() }
+                isEditMode = false,
+                onNavigateBack = { navController.popBackStack() },
+                onSaveItem = { navController.popBackStack() }
             )
         }
     }
 }
 
-interface NavigationActions {
-    fun navigateToDashboard()
-    fun navigateToCatalog()
-    fun navigateToHistory()
-    fun navigateToAIAssistant()
-    fun navigateToItemDetail(itemId: Long)
-    fun navigateToAddEditItem(itemId: Long? = null)
-    fun navigateBack()
-}
-
-private fun createNavigationActions(navController: NavHostController): NavigationActions {
-    return object : NavigationActions {
-        override fun navigateToDashboard() {
-            navController.navigate(Route.Dashboard) {
-                popUpTo(Route.Dashboard) { inclusive = true }
+// Fungsi pembantu untuk mencegah penumpukan halaman saat berpindah via Bottom Nav
+private fun navigateBottomNav(navController: NavHostController, route: String) {
+    if (navController.currentDestination?.route != route) {
+        navController.navigate(route) {
+            popUpTo(Routes.Dashboard.route) {
+                saveState = true
             }
-        }
-
-        override fun navigateToCatalog() {
-            navController.navigate(Route.Catalog)
-        }
-
-        override fun navigateToHistory() {
-            navController.navigate(Route.History)
-        }
-
-        override fun navigateToAIAssistant() {
-            navController.navigate(Route.AIAssistant)
-        }
-
-        override fun navigateToItemDetail(itemId: Long) {
-            navController.navigate(Route.ItemDetail(itemId))
-        }
-
-        override fun navigateToAddEditItem(itemId: Long?) {
-            navController.navigate(Route.AddEditItem(itemId))
-        }
-
-        override fun navigateBack() {
-            navController.popBackStack()
+            launchSingleTop = true
+            restoreState = true
         }
     }
 }
