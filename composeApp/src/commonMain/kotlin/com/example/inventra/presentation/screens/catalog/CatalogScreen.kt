@@ -26,7 +26,14 @@ fun CatalogScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddItem: () -> Unit
 ) {
-    val categories = listOf("Semua", "Pubdok", "Konten", "Dekraf", "Medis", "Logistik")
+    // DAFTAR KATEGORI DIPERBARUI SECARA LENGKAP
+    val categories = listOf(
+        "Semua", "Pubdok", "Konten", "Dekraf", "Technopreneur",
+        "Akademik Beasiswa", "PPK", "Kajitek", "Intrakampus",
+        "Ekstrakampus", "Sosial Masyarakat", "Kaderisasi",
+        "Pengembangan Anggota", "Seni & Olahraga", "Harmonisasi",
+        "Medis", "Logistik"
+    )
     var selectedCategory by remember { mutableStateOf("Semua") }
 
     Scaffold(

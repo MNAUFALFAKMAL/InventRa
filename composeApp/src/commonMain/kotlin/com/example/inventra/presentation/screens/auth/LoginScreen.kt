@@ -28,7 +28,13 @@ fun LoginScreen(
     var divisionId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val divisions = listOf("Pubdok", "Konten", "Dekraf", "Technopreneur", "Beasiswa", "PPK")
+    // DAFTAR DIVISI DIPERBARUI SECARA LENGKAP
+    val divisions = listOf(
+        "Pubdok", "Konten", "Dekraf", "Technopreneur",
+        "Akademik Beasiswa", "PPK", "Kajitek", "Intrakampus",
+        "Ekstrakampus", "Sosial Masyarakat", "Kaderisasi",
+        "Pengembangan Anggota", "Seni & Olahraga", "Harmonisasi"
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
