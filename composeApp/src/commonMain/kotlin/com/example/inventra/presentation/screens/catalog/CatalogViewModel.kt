@@ -4,12 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.model.ItemCategory
-import com.example.inventra.domain.usecase.SearchItemsUseCase
+import com.example.inventra.domain.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 sealed interface CatalogUiState {
@@ -24,7 +25,7 @@ sealed interface CatalogUiState {
 }
 
 class CatalogViewModel(
-    private val searchItemsUseCase: SearchItemsUseCase
+    private val itemRepository: ItemRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -36,10 +37,20 @@ class CatalogViewModel(
     ) { query, category ->
         query to category
     }.flatMapLatest { (query, category) ->
-        searchItemsUseCase(query, if (category == ItemCategory.ALL) null else category)
-    }.combine(_searchQuery) { items, query ->
-        items to query
-    }.combine(_selectedCategory) { (items, query), category ->
+        if (query.isBlank()) {
+            itemRepository.getItemsByCategory(category)
+        } else {
+            itemRepository.searchItems(query).map { items ->
+                if (category != ItemCategory.ALL) {
+                    items.filter { it.category == category }
+                } else {
+                    items
+                }
+            }
+        }
+    }.map { items ->
+        val query = _searchQuery.value
+        val category = _selectedCategory.value
         if (items.isEmpty()) {
             CatalogUiState.Empty
         } else {

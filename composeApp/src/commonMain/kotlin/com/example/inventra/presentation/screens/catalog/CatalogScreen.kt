@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,9 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.presentation.components.CategoryChip
+import com.example.inventra.presentation.components.EmptyState
 import com.example.inventra.presentation.components.InventRaBottomNav
 import com.example.inventra.presentation.components.ItemCard
+import com.example.inventra.presentation.components.LoadingIndicator
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,23 +32,37 @@ fun CatalogScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddItem: () -> Unit
 ) {
-    // DAFTAR KATEGORI DIPERBARUI SECARA LENGKAP
+    val viewModel: CatalogViewModel = koinViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val categories = listOf(
-        "Semua", "Pubdok", "Konten", "Dekraf", "Technopreneur",
-        "Akademik Beasiswa", "PPK", "Kajitek", "Intrakampus",
-        "Ekstrakampus", "Sosial Masyarakat", "Kaderisasi",
-        "Pengembangan Anggota", "Seni & Olahraga", "Harmonisasi",
-        "Medis", "Logistik"
+        "Semua" to ItemCategory.ALL,
+        "Medis" to ItemCategory.MEDICAL,
+        "Elektronik" to ItemCategory.ELECTRONICS,
+        "Bendera" to ItemCategory.FLAG,
+        "Konsumsi" to ItemCategory.FOOD,
+        "Lainnya" to ItemCategory.OTHER
     )
-    var selectedCategory by remember { mutableStateOf("Semua") }
+
+    var selectedCategoryLabel by remember { mutableStateOf("Semua") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Katalog Barang", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = {
+                    Text(
+                        "Katalog Barang",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 actions = {
-                    IconButton(onClick = { /* TODO: Search */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.outline)
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
             )
@@ -56,7 +76,6 @@ fun CatalogScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
         },
-        // MEMASANG BOTTOM NAV
         bottomBar = {
             InventRaBottomNav(currentRoute = currentRoute, onNavigate = onNavigate)
         },
@@ -67,38 +86,85 @@ fun CatalogScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Filter Chips
+            // Search bar
+            OutlinedTextField(
+                value = when (val s = uiState) {
+                    is CatalogUiState.Success -> s.query
+                    else -> ""
+                },
+                onValueChange = { viewModel.onSearchQueryChange(it) },
+                placeholder = { Text("Cari barang...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                }
+            )
+
+            // Filter Chips kategori
             LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(categories) { category ->
+                items(categories) { (label, category) ->
                     CategoryChip(
-                        category = category,
-                        isSelected = selectedCategory == category,
-                        onClick = { selectedCategory = category }
+                        category = label,
+                        isSelected = selectedCategoryLabel == label,
+                        onClick = {
+                            selectedCategoryLabel = label
+                            viewModel.onCategorySelected(category)
+                        }
                     )
                 }
             }
 
-            // Grid Items
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                items(6) { index ->
-                    ItemCard(
-                        title = "Tensimeter",
-                        category = "Medis",
-                        description = "Alat ukur tekanan darah digital.",
-                        stock = 5,
-                        isAvailable = true,
-                        onClick = { onNavigateToDetail("item_$index") },
-                        onBorrowClick = { /* TODO: Borrow action */ }
+            // Konten
+            when (val state = uiState) {
+                is CatalogUiState.Loading -> {
+                    LoadingIndicator()
+                }
+
+                is CatalogUiState.Empty -> {
+                    EmptyState(
+                        title = "Tidak Ada Barang",
+                        description = "Belum ada barang dalam kategori ini"
                     )
+                }
+
+                is CatalogUiState.Error -> {
+                    EmptyState(
+                        title = "Terjadi Kesalahan",
+                        description = state.message
+                    )
+                }
+
+                is CatalogUiState.Success -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp)
+                    ) {
+                        items(state.items) { item ->
+                            ItemCard(
+                                title = item.name,
+                                category = item.category.displayName,
+                                description = item.description,
+                                stock = item.availableStock,
+                                isAvailable = item.isBorrowable,
+                                onClick = { onNavigateToDetail(item.name) },
+                                onBorrowClick = {}
+                            )
+                        }
+                    }
                 }
             }
         }

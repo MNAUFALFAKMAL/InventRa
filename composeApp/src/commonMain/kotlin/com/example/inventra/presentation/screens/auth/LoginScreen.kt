@@ -1,13 +1,14 @@
 package com.example.inventra.presentation.screens.auth
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,22 +20,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
-    var selectedDivision by remember { mutableStateOf("Bendahara Umum") }
-    var divisionId by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val viewModel: LoginViewModel = koinViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // DAFTAR DIVISI DIPERBARUI SECARA LENGKAP
+    // Navigate saat berhasil login
+    LaunchedEffect(uiState.loggedInUser) {
+        if (uiState.loggedInUser != null) {
+            onLoginSuccess()
+        }
+    }
+
     val divisions = listOf(
         "Pubdok", "Konten", "Dekraf", "Technopreneur",
         "Akademik Beasiswa", "PPK", "Kajitek", "Intrakampus",
         "Ekstrakampus", "Sosial Masyarakat", "Kaderisasi",
         "Pengembangan Anggota", "Seni & Olahraga", "Harmonisasi"
     )
+
+    var selectedDivision by remember { mutableStateOf("Bendahara Umum") }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -43,6 +53,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -74,57 +85,112 @@ fun LoginScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Select Division", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Text(
+                        "Select Division",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Admin Access Button
                     OutlinedCard(
-                        modifier = Modifier.fillMaxWidth().clickable { selectedDivision = "Bendahara Umum" },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedDivision = "Bendahara Umum" },
                         border = BorderStroke(
                             2.dp,
-                            if (selectedDivision == "Bendahara Umum") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            if (selectedDivision == "Bendahara Umum")
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.outlineVariant
                         ),
                         colors = CardDefaults.outlinedCardColors(
-                            containerColor = if (selectedDivision == "Bendahara Umum") MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
+                            containerColor = if (selectedDivision == "Bendahara Umum")
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            else
+                                Color.Transparent
                         )
                     ) {
-                        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
-                                Text("ADMIN ACCESS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                Text("Bendahara Umum", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "ADMIN ACCESS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Bendahara Umum",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Grid Divisions
+                    // Grid Divisions — semua 14 divisi
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(3),
-                        modifier = Modifier.height(150.dp),
+                        modifier = Modifier.height(300.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(divisions) { division ->
                             val isSelected = selectedDivision == division
                             OutlinedCard(
-                                modifier = Modifier.height(70.dp).clickable { selectedDivision = division },
-                                border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant),
-                                colors = CardDefaults.outlinedCardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else Color.Transparent)
+                                modifier = Modifier
+                                    .height(70.dp)
+                                    .clickable { selectedDivision = division },
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSelected)
+                                        MaterialTheme.colorScheme.secondary
+                                    else
+                                        MaterialTheme.colorScheme.outlineVariant
+                                ),
+                                colors = CardDefaults.outlinedCardColors(
+                                    containerColor = if (isSelected)
+                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                                    else
+                                        Color.Transparent
+                                )
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxSize(),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
-                                    Text(division, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+                                    Icon(
+                                        Icons.Default.Group,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        division,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
                                 }
                             }
                         }
@@ -132,37 +198,78 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Inputs
+                    // Error message
+                    if (uiState.error != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = uiState.error!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // Email field
                     OutlinedTextField(
-                        value = divisionId,
-                        onValueChange = { divisionId = it },
-                        label = { Text("Division ID") },
-                        leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
+                        value = uiState.email,
+                        onValueChange = { viewModel.onEmailChange(it) },
+                        label = { Text("Email") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Badge, contentDescription = null)
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
                     )
+
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // Password field
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
+                        value = uiState.password,
+                        onValueChange = { viewModel.onPasswordChange(it) },
                         label = { Text("Access Key") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Lock, contentDescription = null)
+                        },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // Login Button
                     Button(
-                        onClick = onLoginSuccess,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        onClick = { viewModel.login() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        enabled = !uiState.isLoading,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
                     ) {
-                        Text("Authorize Access", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.Login, contentDescription = null)
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Authorize Access", fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(Icons.Default.Login, contentDescription = null)
+                        }
                     }
                 }
             }
