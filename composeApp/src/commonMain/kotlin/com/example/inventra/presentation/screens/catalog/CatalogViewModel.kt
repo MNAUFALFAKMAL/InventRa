@@ -5,10 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.domain.repository.ItemRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -24,6 +27,7 @@ sealed interface CatalogUiState {
     data class Error(val message: String) : CatalogUiState
 }
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class CatalogViewModel(
     private val itemRepository: ItemRepository
 ) : ViewModel() {
@@ -32,7 +36,8 @@ class CatalogViewModel(
     private val _selectedCategory = MutableStateFlow(ItemCategory.ALL)
 
     val uiState: StateFlow<CatalogUiState> = combine(
-        _searchQuery,
+        // Debounce 300ms — API tidak dipanggil setiap ketikan
+        _searchQuery.debounce(300L),
         _selectedCategory
     ) { query, category ->
         query to category
@@ -51,11 +56,8 @@ class CatalogViewModel(
     }.map { items ->
         val query = _searchQuery.value
         val category = _selectedCategory.value
-        if (items.isEmpty()) {
-            CatalogUiState.Empty
-        } else {
-            CatalogUiState.Success(items, query, category)
-        }
+        if (items.isEmpty()) CatalogUiState.Empty
+        else CatalogUiState.Success(items, query, category)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
