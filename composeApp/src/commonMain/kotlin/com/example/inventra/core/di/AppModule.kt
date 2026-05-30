@@ -51,7 +51,7 @@ val preferencesModule = module {
 val repositoryModule = module {
     single<AuthRepository> { AuthRepositoryImpl() }
     single<ItemRepository> { ItemRepositoryImpl(get()) }
-    single<BorrowRepository> { BorrowRepositoryImpl() }
+    single<BorrowRepository> { BorrowRepositoryImpl(get()) }
     singleOf(::AIRepositoryImpl) bind AIRepository::class
 }
 

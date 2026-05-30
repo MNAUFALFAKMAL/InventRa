@@ -29,3 +29,6 @@ UPDATE BorrowRecordEntity SET status = ?, return_date = ?, fine_amount = ? WHERE
 
 deleteRecord:
 DELETE FROM BorrowRecordEntity WHERE id = ?;
+
+deleteAll:
+DELETE FROM BorrowRecordEntity;
