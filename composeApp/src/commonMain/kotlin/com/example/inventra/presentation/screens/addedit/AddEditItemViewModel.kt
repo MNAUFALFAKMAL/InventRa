@@ -23,6 +23,7 @@ data class AddEditUiState(
     val availableStock: String = "1",
     val condition: ItemCondition = ItemCondition.GOOD,
     val picName: String = "",
+    val imageUrl: String = "",
     val isSaving: Boolean = false,
     val error: String? = null
 )
@@ -68,6 +69,7 @@ class AddEditItemViewModel(
     fun onAvailableStockChange(stock: String) = _uiState.update { it.copy(availableStock = stock) }
     fun onConditionChange(cond: ItemCondition) = _uiState.update { it.copy(condition = cond) }
     fun onPicNameChange(pic: String) = _uiState.update { it.copy(picName = pic) }
+    fun onImageUrlChange(url: String) = _uiState.update { it.copy(imageUrl = url) }
 
     fun saveItem(onSuccess: () -> Unit) {
         val state = _uiState.value
