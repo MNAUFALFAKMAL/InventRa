@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.inventra.presentation.screens.addedit.AddEditItemScreen
 import com.example.inventra.presentation.screens.ai.AIInventoryScreen
 import com.example.inventra.presentation.screens.auth.LoginScreen
@@ -62,10 +64,31 @@ fun AppNavHost(
         }
 
         composable(Routes.ItemDetail.route) { backStackEntry ->
-            // Mengambil argumen itemId jika diperlukan oleh ViewModel
-            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            val itemId = backStackEntry.arguments?.getString("itemId")?.toLongOrNull() ?: 0L
             ItemDetailScreen(
-                onNavigateBack = { navController.popBackStack() }
+                itemId = itemId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { id ->
+                    navController.navigate("${Routes.AddEditItem.route}?itemId=$id")
+                }
+            )
+        }
+
+        composable(
+            route = "${Routes.AddEditItem.route}?itemId={itemId}",
+            arguments = listOf(
+                navArgument("itemId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getLong("itemId")
+                ?.takeIf { it != -1L }
+            AddEditItemScreen(
+                itemId = itemId,
+                onNavigateBack = { navController.popBackStack() },
+                onSaveSuccess = { navController.popBackStack() }
             )
         }
 

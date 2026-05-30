@@ -16,16 +16,18 @@ import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
 import com.example.inventra.domain.usecase.*
-import com.example.inventra.presentation.screens.addedit.AddEditItemViewModel
 import com.example.inventra.presentation.screens.ai.AIInventoryViewModel
 import com.example.inventra.presentation.screens.auth.LoginViewModel
 import com.example.inventra.presentation.screens.catalog.CatalogViewModel
 import com.example.inventra.presentation.screens.dashboard.DashboardViewModel
-import com.example.inventra.presentation.screens.detail.ItemDetailViewModel
 import com.example.inventra.presentation.screens.history.HistoryViewModel
+import com.example.inventra.presentation.screens.addedit.AddEditItemViewModel
+import com.example.inventra.presentation.screens.detail.ItemDetailViewModel
+import org.koin.core.parameter.parametersOf
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -62,11 +64,17 @@ val useCaseModule = module {
 }
 
 val viewModelModule = module {
-    single { LoginViewModel(get()) }
-    single { DashboardViewModel(get(), get()) }
-    single { CatalogViewModel(get()) }
-    single { HistoryViewModel(get()) }
-    single { AIInventoryViewModel(get(), get(), get()) }
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::DashboardViewModel)
+    viewModelOf(::CatalogViewModel)
+    viewModelOf(::HistoryViewModel)
+    viewModelOf(::AIInventoryViewModel)
+    factory { (itemId: Long?) ->
+        AddEditItemViewModel(itemId, get(), get())
+    }
+    factory { (itemId: Long) ->
+        ItemDetailViewModel(itemId, get(), get())
+    }
 }
 
 val sharedModules = listOf(

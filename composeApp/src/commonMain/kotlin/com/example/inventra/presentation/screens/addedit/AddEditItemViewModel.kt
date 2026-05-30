@@ -40,18 +40,18 @@ class AddEditItemViewModel(
         if (itemId != null) {
             viewModelScope.launch {
                 itemRepository.getItemById(itemId).collect { item ->
-                    item?.let { existingItem ->
-                        _uiState.update { 
-                            it.copy(
-                                id = existingItem.id,
-                                name = existingItem.name,
-                                description = existingItem.description,
-                                category = existingItem.category,
-                                location = existingItem.location,
-                                totalStock = existingItem.totalStock.toString(),
-                                availableStock = existingItem.availableStock.toString(),
-                                condition = existingItem.condition,
-                                picName = existingItem.picName
+                    item?.let {
+                        _uiState.update { state ->
+                            state.copy(
+                                id = it.id,
+                                name = it.name,
+                                description = it.description,
+                                category = it.category,
+                                location = it.location,
+                                totalStock = it.totalStock.toString(),
+                                availableStock = it.availableStock.toString(),
+                                condition = it.condition,
+                                picName = it.picName
                             )
                         }
                     }
@@ -60,7 +60,7 @@ class AddEditItemViewModel(
         }
     }
 
-    fun onNameChange(name: String) = _uiState.update { it.copy(name = name) }
+    fun onNameChange(name: String) = _uiState.update { it.copy(name = name, error = null) }
     fun onDescriptionChange(desc: String) = _uiState.update { it.copy(description = desc) }
     fun onCategoryChange(cat: ItemCategory) = _uiState.update { it.copy(category = cat) }
     fun onLocationChange(loc: String) = _uiState.update { it.copy(location = loc) }
@@ -71,8 +71,13 @@ class AddEditItemViewModel(
 
     fun saveItem(onSuccess: () -> Unit) {
         val state = _uiState.value
-        _uiState.update { it.copy(isSaving = true) }
-        
+        if (state.name.isBlank()) {
+            _uiState.update { it.copy(error = "Nama barang tidak boleh kosong") }
+            return
+        }
+
+        _uiState.update { it.copy(isSaving = true, error = null) }
+
         viewModelScope.launch {
             val item = Item(
                 id = state.id,
@@ -85,13 +90,14 @@ class AddEditItemViewModel(
                 condition = state.condition,
                 picName = state.picName
             )
-            
-            val result = saveItemUseCase(item)
-            if (result.isSuccess) {
-                onSuccess()
-            } else {
-                _uiState.update { it.copy(isSaving = false, error = result.exceptionOrNull()?.message) }
-            }
+
+            saveItemUseCase(item)
+                .onSuccess { onSuccess() }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(isSaving = false, error = e.message ?: "Gagal menyimpan")
+                    }
+                }
         }
     }
 }
