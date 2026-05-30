@@ -19,7 +19,9 @@ import com.example.inventra.presentation.components.GlassCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemDetailScreen(
-    onNavigateBack: () -> Unit
+    itemId: Long,
+    onNavigateBack: () -> Unit,
+    onNavigateToEdit: (Long) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
