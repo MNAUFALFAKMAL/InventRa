@@ -5,9 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,14 +31,14 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Aktif", "Semua")
+    val tabs = listOf("Pending", "Aktif", "Semua")
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Borrowing History",
+                        "Peminjaman",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -60,7 +58,6 @@ fun HistoryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Tab Row
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -76,9 +73,7 @@ fun HistoryScreen(
             }
 
             when (val state = uiState) {
-                is HistoryUiState.Loading -> {
-                    LoadingIndicator()
-                }
+                is HistoryUiState.Loading -> LoadingIndicator()
 
                 is HistoryUiState.Empty -> {
                     EmptyState(
@@ -88,21 +83,20 @@ fun HistoryScreen(
                 }
 
                 is HistoryUiState.Success -> {
-                    // Filter berdasarkan tab yang dipilih
                     val displayedRecords = when (selectedTab) {
-                        0 -> state.records.filter {
+                        0 -> state.records.filter { it.status == BorrowStatus.PENDING }
+                        1 -> state.records.filter {
                             it.status == BorrowStatus.ACTIVE || it.status == BorrowStatus.OVERDUE
                         }
                         else -> state.records
                     }
 
-                    // Summary overdue jika ada
+                    // Alert overdue
                     val overdueCount = state.records.count { it.status == BorrowStatus.OVERDUE }
                     if (overdueCount > 0) {
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                containerColor = MaterialTheme.colorScheme.errorContainer
                             ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
@@ -113,7 +107,11 @@ fun HistoryScreen(
                                 modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
@@ -121,9 +119,39 @@ fun HistoryScreen(
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleSmall
                                     )
+                                    Text("Segera tindak lanjuti.", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+
+                    // Info pending
+                    if (selectedTab == 0) {
+                        val pendingCount = state.records.count { it.status == BorrowStatus.PENDING }
+                        if (pendingCount > 0) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Pending,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "Segera tindak lanjuti.",
-                                        style = MaterialTheme.typography.bodySmall
+                                        "$pendingCount permintaan menunggu persetujuan Admin.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
                                 }
                             }
@@ -133,21 +161,27 @@ fun HistoryScreen(
                     if (displayedRecords.isEmpty()) {
                         EmptyState(
                             title = "Tidak Ada Data",
-                            description = if (selectedTab == 0)
-                                "Tidak ada peminjaman aktif saat ini."
-                            else
-                                "Belum ada riwayat peminjaman."
+                            description = when (selectedTab) {
+                                0 -> "Tidak ada permintaan pending saat ini."
+                                1 -> "Tidak ada peminjaman aktif saat ini."
+                                else -> "Belum ada riwayat peminjaman."
+                            }
                         )
                     } else {
                         LazyColumn(
-                            contentPadding = PaddingValues(
-                                horizontal = 16.dp,
-                                vertical = 8.dp
-                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(displayedRecords) { record ->
-                                BorrowRecordCard(record = record)
+                                BorrowRecordCard(
+                                    record = record,
+                                    onApprove = if (record.status == BorrowStatus.PENDING) {
+                                        { viewModel.approveRequest(record.id) }
+                                    } else null,
+                                    onReturn = if (record.status == BorrowStatus.ACTIVE || record.status == BorrowStatus.OVERDUE) {
+                                        { viewModel.returnItem(record.id) }
+                                    } else null
+                                )
                             }
                         }
                     }
@@ -158,9 +192,14 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun BorrowRecordCard(record: BorrowRecord) {
+private fun BorrowRecordCard(
+    record: BorrowRecord,
+    onApprove: (() -> Unit)? = null,
+    onReturn: (() -> Unit)? = null
+) {
     val isOverdue = record.status == BorrowStatus.OVERDUE
     val isReturned = record.status == BorrowStatus.RETURNED
+    val isPending = record.status == BorrowStatus.PENDING
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -168,102 +207,157 @@ private fun BorrowRecordCard(record: BorrowRecord) {
         colors = CardDefaults.cardColors(
             containerColor = when {
                 isOverdue -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                isPending -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
                 isReturned -> MaterialTheme.colorScheme.surfaceVariant
                 else -> MaterialTheme.colorScheme.surface
             }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            // Icon status
-            Icon(
-                imageVector = when {
-                    isReturned -> Icons.Default.CheckCircle
-                    isOverdue -> Icons.Default.Warning
-                    else -> Icons.Default.History
-                },
-                contentDescription = null,
-                tint = when {
-                    isReturned -> MaterialTheme.colorScheme.secondary
-                    isOverdue -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier.size(20.dp).padding(top = 2.dp)
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Icon status
+                Icon(
+                    imageVector = when {
+                        isReturned -> Icons.Default.CheckCircle
+                        isOverdue -> Icons.Default.Warning
+                        isPending -> Icons.Default.Pending
+                        else -> Icons.Default.History
+                    },
+                    contentDescription = null,
+                    tint = when {
+                        isReturned -> MaterialTheme.colorScheme.secondary
+                        isOverdue -> MaterialTheme.colorScheme.error
+                        isPending -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.size(20.dp)
+                )
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            // Info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = record.itemName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Peminjam: ${record.borrowerName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Text(
-                    text = "Dipinjam: ${record.borrowDate.formatDateOnly()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Text(
-                    text = "Jatuh tempo: ${record.dueDate.formatDateOnly()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isOverdue) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.outline
-                )
-                if (isReturned && record.returnDate != null) {
+                // Info
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Dikembalikan: ${record.returnDate.formatDateOnly()}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        text = record.itemName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                }
-                if (record.fineAmount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Denda: Rp ${record.fineAmount.toLocaleString()}",
+                        "Peminjam: ${record.borrowerName}",
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        "Tanggal: ${record.borrowDate.formatDateOnly()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    if (!isPending) {
+                        Text(
+                            "Jatuh tempo: ${record.dueDate.formatDateOnly()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isOverdue) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    if (isReturned && record.returnDate != null) {
+                        Text(
+                            "Dikembalikan: ${record.returnDate.formatDateOnly()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    if (record.fineAmount > 0) {
+                        Text(
+                            "Denda: Rp ${record.fineAmount.toLocaleString()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                // Status badge
+                Surface(
+                    color = when {
+                        isReturned -> MaterialTheme.colorScheme.secondaryContainer
+                        isOverdue -> MaterialTheme.colorScheme.errorContainer
+                        isPending -> MaterialTheme.colorScheme.tertiaryContainer
+                        else -> MaterialTheme.colorScheme.primaryContainer
+                    },
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = when (record.status) {
+                            BorrowStatus.RETURNED -> "SELESAI"
+                            BorrowStatus.OVERDUE -> "OVERDUE"
+                            BorrowStatus.ACTIVE -> "AKTIF"
+                            BorrowStatus.PENDING -> "PENDING"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
+                        color = when {
+                            isReturned -> MaterialTheme.colorScheme.onSecondaryContainer
+                            isOverdue -> MaterialTheme.colorScheme.error
+                            isPending -> MaterialTheme.colorScheme.onTertiaryContainer
+                            else -> MaterialTheme.colorScheme.onPrimaryContainer
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            // Status badge
-            Surface(
-                color = when {
-                    isReturned -> MaterialTheme.colorScheme.secondaryContainer
-                    isOverdue -> MaterialTheme.colorScheme.errorContainer
-                    else -> MaterialTheme.colorScheme.primaryContainer
-                },
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = when (record.status) {
-                        BorrowStatus.RETURNED -> "SELESAI"
-                        BorrowStatus.OVERDUE -> "OVERDUE"
-                        BorrowStatus.ACTIVE -> "AKTIF"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = when {
-                        isReturned -> MaterialTheme.colorScheme.onSecondaryContainer
-                        isOverdue -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onPrimaryContainer
-                    },
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+            // Action buttons
+            if (onApprove != null || onReturn != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (onApprove != null) {
+                        Button(
+                            onClick = onApprove,
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Approve", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    if (onReturn != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedButton(
+                            onClick = onReturn,
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AssignmentReturn,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Kembalikan", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
             }
         }
     }
