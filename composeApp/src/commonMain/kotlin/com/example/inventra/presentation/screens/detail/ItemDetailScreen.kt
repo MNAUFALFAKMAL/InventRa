@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalUriHandler
 import com.example.inventra.presentation.components.GlassCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,34 +37,47 @@ fun ItemDetailScreen(
             )
         },
         bottomBar = {
-            // Action Buttons Fixed di Bawah
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+            if (uiState is ItemDetailUiState.Success) {
+                val item = (uiState as ItemDetailUiState.Success).item
+                val uriHandler = LocalUriHandler.current
+                val whatsappUrl = "https://wa.me/6287714891011?text=" +
+                        "Halo Revania, saya ingin meminjam *${item.name}* " +
+                        "dari inventaris HMIF ITERA. Apakah tersedia?"
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    OutlinedButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(Icons.Default.Call, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Hubungi PIC")
-                    }
-                    Button(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
-                    ) {
-                        Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Pinjam")
+                        OutlinedButton(
+                            onClick = {
+                                uriHandler.openUri(whatsappUrl)
+                            },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Call, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Hubungi PIC")
+                        }
+                        Button(
+                            onClick = { showBorrowDialog = true },
+                            enabled = item.isBorrowable,
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (item.isBorrowable) "Pinjam" else "Habis")
+                        }
                     }
                 }
             }
