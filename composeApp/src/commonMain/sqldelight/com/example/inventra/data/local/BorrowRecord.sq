@@ -32,3 +32,9 @@ DELETE FROM BorrowRecordEntity WHERE id = ?;
 
 deleteAll:
 DELETE FROM BorrowRecordEntity;
+
+getPendingRecords:
+SELECT * FROM BorrowRecordEntity WHERE status = 'PENDING' ORDER BY borrow_date DESC;
+
+updateStatus:
+UPDATE BorrowRecordEntity SET status = ? WHERE id = ?;

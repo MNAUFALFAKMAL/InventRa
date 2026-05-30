@@ -108,6 +108,24 @@ class BorrowRepositoryImpl(
         )
     }
 
+    override suspend fun approveRequest(recordId: Long) {
+        queries.updateRecordStatus(
+            status = BorrowStatus.ACTIVE.name,
+            return_date = null,
+            fine_amount = 0L,
+            id = recordId
+        )
+        syncScope.launch {
+            try {
+                db["borrow_records"].update(
+                    mapOf("status" to "ACTIVE")
+                ) { filter { eq("id", recordId.toString()) } }
+            } catch (e: Exception) {
+                println("Approve sync gagal: ${e.message}")
+            }
+        }
+    }
+
     private suspend fun syncRecordsFromSupabase() {
         try {
             val records = db["borrow_records"]

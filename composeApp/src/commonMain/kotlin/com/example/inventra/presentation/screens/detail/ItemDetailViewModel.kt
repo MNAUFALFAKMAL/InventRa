@@ -3,6 +3,7 @@ package com.example.inventra.presentation.screens.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.BorrowRecord
+import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
@@ -45,7 +46,11 @@ class ItemDetailViewModel(
         }
     }
 
-    fun borrowItem(borrowerName: String, onSuccess: () -> Unit) {
+    /**
+     * Buat permintaan peminjaman dengan status PENDING.
+     * Admin (Nabila) perlu approve dari HistoryScreen.
+     */
+    fun requestBorrow(borrowerName: String, borrowerDivision: String, onSuccess: () -> Unit) {
         val currentState = uiState.value
         if (currentState !is ItemDetailUiState.Success) return
 
@@ -58,17 +63,13 @@ class ItemDetailViewModel(
                 val record = BorrowRecord(
                     itemId = item.id,
                     itemName = item.name,
-                    borrowerName = borrowerName,
+                    borrowerName = "$borrowerName ($borrowerDivision)",
                     borrowDate = now,
-                    dueDate = dueDate
+                    dueDate = dueDate,
+                    status = BorrowStatus.PENDING
                 )
 
                 borrowRepository.borrowItem(record)
-
-                itemRepository.updateItem(
-                    item.copy(availableStock = item.availableStock - 1)
-                )
-
                 onSuccess()
             }
         }
