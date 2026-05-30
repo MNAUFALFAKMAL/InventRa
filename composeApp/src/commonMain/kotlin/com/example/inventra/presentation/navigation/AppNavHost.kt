@@ -1,5 +1,9 @@
 package com.example.inventra.presentation.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -31,7 +35,19 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+        },
+        exitTransition = {
+            slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+        },
+        popEnterTransition = {
+            slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+        },
+        popExitTransition = {
+            slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+        }
     ) {
         composable(Routes.Login.route) {
             LoginScreen(
@@ -73,7 +89,6 @@ fun AppNavHost(
             )
         }
 
-        // Route AddEditItem tanpa itemId (tambah baru)
         composable(Routes.AddEditItem.route) {
             AddEditItemScreen(
                 itemId = null,
@@ -82,7 +97,6 @@ fun AppNavHost(
             )
         }
 
-        // Route AddEditItem dengan itemId (edit)
         composable(
             route = "${Routes.AddEditItem.route}?itemId={itemId}",
             arguments = listOf(

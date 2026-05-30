@@ -1,5 +1,9 @@
 package com.example.inventra
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -12,26 +16,16 @@ import com.example.inventra.presentation.theme.LocalThemeIsDark
 
 @Composable
 fun App() {
-    // Cek apakah sistem device/HP sedang menggunakan mode gelap
     val isSystemDark = isSystemInDarkTheme()
-
-    // Buat state yang bisa diubah (mutable) dan diinisialisasi dengan tema sistem
     val isDarkThemeState = remember { mutableStateOf(isSystemDark) }
 
-    // Membungkus seluruh aplikasi dengan penyedia state Tema
     CompositionLocalProvider(LocalThemeIsDark provides isDarkThemeState) {
-
-        // Memanggil tema dengan value dari state yang sudah disediakan di atas
         InventRaTheme(darkTheme = isDarkThemeState.value) {
-
-            // Surface utama untuk memastikan warna background bereaksi terhadap perubahan tema
             Surface(
                 color = androidx.compose.material3.MaterialTheme.colorScheme.background
             ) {
-                // Menjalankan Navigasi Aplikasi
                 AppNavHost()
             }
-
         }
     }
 }
