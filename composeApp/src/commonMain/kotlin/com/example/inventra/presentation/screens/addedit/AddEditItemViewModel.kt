@@ -100,6 +100,21 @@ class AddEditItemViewModel(
                         it.copy(isSaving = false, error = e.message ?: "Gagal menyimpan")
                     }
                 }
+
+        }
+    }
+    fun uploadAndSaveImage(imageBytes: ByteArray, fileName: String) {
+        _uiState.update { it.copy(isSaving = true) }
+        viewModelScope.launch {
+            itemRepository.uploadItemImage(imageBytes, fileName)
+                .onSuccess { url ->
+                    _uiState.update { it.copy(isSaving = false, imageUrl = url) }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(isSaving = false, error = "Upload foto gagal: ${e.message}")
+                    }
+                }
         }
     }
 }

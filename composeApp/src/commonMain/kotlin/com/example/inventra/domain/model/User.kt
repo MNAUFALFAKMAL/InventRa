@@ -25,5 +25,13 @@ enum class UserDivision(val displayName: String) {
     DEKRAF("Dekraf"),
     TECHNOPRENEUR("Technopreneur"),
     BEASISWA("Beasiswa"),
-    PPK("PPK")
+    PPK("PPK"),
+    KAJITEK("Kajitek"),
+    INTRAKAMPUS("Intrakampus"),
+    EKSTRAKAMPUS("Ekstrakampus"),
+    SOSIAL_MASYARAKAT("Sosial Masyarakat"),
+    KADERISASI("Kaderisasi"),
+    PENGEMBANGAN_ANGGOTA("Pengembangan Anggota"),
+    SENI_OLAHRAGA("Seni & Olahraga"),
+    HARMONISASI("Harmonisasi")
 }

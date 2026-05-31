@@ -1,5 +1,7 @@
 package com.example.inventra.data.repository
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.example.inventra.core.network.SupabaseClientProvider
 import com.example.inventra.data.local.InventRaDatabase
 import com.example.inventra.data.local.entity.toDomain
@@ -8,8 +10,6 @@ import com.example.inventra.data.remote.dto.InsertBorrowDto
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.domain.repository.BorrowRepository
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -54,6 +54,7 @@ class BorrowRepositoryImpl(
     }
 
     override suspend fun borrowItem(record: BorrowRecord): Long {
+        // Simpan ke SQLDelight dengan status PENDING
         queries.insertRecord(
             item_id = record.itemId,
             item_name = record.itemName,
@@ -61,14 +62,34 @@ class BorrowRepositoryImpl(
             borrow_date = record.borrowDate.toEpochMilliseconds(),
             due_date = record.dueDate.toEpochMilliseconds(),
             return_date = null,
-            status = BorrowStatus.ACTIVE.name,
+            status = BorrowStatus.PENDING.name,
             fine_amount = 0L
         )
         val localId = queries.lastInsertId().executeAsOne()
 
+        // Kurangi available_stock di SQLDelight lokal
+        val itemQueries = database.itemQueries
+        val existingItem = itemQueries.getItemById(record.itemId).executeAsOneOrNull()
+        if (existingItem != null && existingItem.available_stock > 0) {
+            itemQueries.updateItem(
+                name = existingItem.name,
+                description = existingItem.description,
+                category = existingItem.category,
+                location = existingItem.location,
+                total_stock = existingItem.total_stock,
+                available_stock = existingItem.available_stock - 1,
+                condition = existingItem.condition,
+                pic_name = existingItem.pic_name,
+                image_url = existingItem.image_url,
+                updated_at = Clock.System.now().toEpochMilliseconds(),
+                id = record.itemId
+            )
+        }
+
+        // Sync ke Supabase di background
         syncScope.launch {
             try {
-                val userId = auth.currentUserOrNull()?.id ?: return@launch
+                val userId = auth.currentUserOrNull()?.id ?: "anonymous"
                 val dto = InsertBorrowDto(
                     itemId = record.itemId.toString(),
                     borrowerId = userId,
@@ -77,14 +98,18 @@ class BorrowRepositoryImpl(
                     division = "HMIF",
                     quantity = 1,
                     dueDate = record.dueDate.toString(),
-                    status = "ACTIVE"
+                    status = BorrowStatus.PENDING.name
                 )
                 db["borrow_records"].insert(dto)
+                // Update available_stock di Supabase
+                val newStock = (existingItem?.available_stock?.minus(1) ?: 0).coerceAtLeast(0)
+                db["items"].update(
+                    mapOf("available_stock" to newStock)
+                ) { filter { eq("id", record.itemId.toString()) } }
             } catch (e: Exception) {
-                println("Borrow sync gagal (offline?): ${e.message}")
+                println("Borrow sync gagal: ${e.message}")
             }
         }
-
         return localId
     }
 
@@ -106,6 +131,43 @@ class BorrowRepositoryImpl(
             fine_amount = fineAmount,
             id = recordId
         )
+
+        // Kembalikan available_stock
+        val itemQueries = database.itemQueries
+        val existingItem = itemQueries.getItemById(record.item_id).executeAsOneOrNull()
+        if (existingItem != null) {
+            val newAvailable = (existingItem.available_stock + 1)
+                .coerceAtMost(existingItem.total_stock)
+            itemQueries.updateItem(
+                name = existingItem.name,
+                description = existingItem.description,
+                category = existingItem.category,
+                location = existingItem.location,
+                total_stock = existingItem.total_stock,
+                available_stock = newAvailable,
+                condition = existingItem.condition,
+                pic_name = existingItem.pic_name,
+                image_url = existingItem.image_url,
+                updated_at = Clock.System.now().toEpochMilliseconds(),
+                id = record.item_id
+            )
+            syncScope.launch {
+                try {
+                    db["items"].update(
+                        mapOf("available_stock" to newAvailable)
+                    ) { filter { eq("id", record.item_id.toString()) } }
+                    db["borrow_records"].update(
+                        mapOf(
+                            "status" to BorrowStatus.RETURNED.name,
+                            "fine_amount" to fineAmount,
+                            "return_date" to returnDate.toString()
+                        )
+                    ) { filter { eq("id", recordId.toString()) } }
+                } catch (e: Exception) {
+                    println("Return sync gagal: ${e.message}")
+                }
+            }
+        }
     }
 
     override suspend fun approveRequest(recordId: Long) {
@@ -118,7 +180,7 @@ class BorrowRepositoryImpl(
         syncScope.launch {
             try {
                 db["borrow_records"].update(
-                    mapOf("status" to "ACTIVE")
+                    mapOf("status" to BorrowStatus.ACTIVE.name)
                 ) { filter { eq("id", recordId.toString()) } }
             } catch (e: Exception) {
                 println("Approve sync gagal: ${e.message}")
@@ -131,7 +193,6 @@ class BorrowRepositoryImpl(
             val records = db["borrow_records"]
                 .select { order("created_at", Order.DESCENDING) }
                 .decodeList<BorrowRecordDto>()
-
             database.transaction {
                 queries.deleteAll()
                 records.forEach { dto ->
@@ -155,7 +216,7 @@ class BorrowRepositoryImpl(
             }
             println("SYNC: ${records.size} borrow records synced")
         } catch (e: Exception) {
-            println("SYNC: Borrow offline, pakai cache — ${e.message}")
+            println("SYNC borrow offline: ${e.message}")
         }
     }
 }

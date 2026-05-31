@@ -15,7 +15,10 @@ import com.example.inventra.domain.repository.AIRepository
 import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
-import com.example.inventra.domain.usecase.*
+import com.example.inventra.domain.usecase.DeleteItemUseCase
+import com.example.inventra.domain.usecase.GetAllItemsUseCase
+import com.example.inventra.domain.usecase.SaveItemUseCase
+import com.example.inventra.domain.usecase.SearchItemsUseCase
 import com.example.inventra.presentation.screens.addedit.AddEditItemViewModel
 import com.example.inventra.presentation.screens.ai.AIInventoryViewModel
 import com.example.inventra.presentation.screens.auth.LoginViewModel
@@ -23,6 +26,8 @@ import com.example.inventra.presentation.screens.catalog.CatalogViewModel
 import com.example.inventra.presentation.screens.dashboard.DashboardViewModel
 import com.example.inventra.presentation.screens.detail.ItemDetailViewModel
 import com.example.inventra.presentation.screens.history.HistoryViewModel
+import com.example.inventra.presentation.screens.management.UserManagementViewModel
+import com.example.inventra.presentation.screens.profile.ProfileViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
@@ -68,6 +73,8 @@ val viewModelModule = module {
     viewModelOf(::CatalogViewModel)
     viewModelOf(::HistoryViewModel)
     viewModelOf(::AIInventoryViewModel)
+    single { ProfileViewModel(get()) }
+    single { UserManagementViewModel(get()) }
     factory { (itemId: Long?) -> AddEditItemViewModel(itemId, get(), get()) }
     factory { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get()) }
 }

@@ -33,6 +33,7 @@ fun ItemDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showBorrowDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var borrowerName by remember { mutableStateOf("") }
     var borrowerDivision by remember { mutableStateOf(UserDivision.PUBDOK) }
     var showDivisionDropdown by remember { mutableStateOf(false) }
@@ -68,6 +69,7 @@ fun ItemDetailScreen(
                 },
                 actions = {
                     if (uiState is ItemDetailUiState.Success) {
+                        // Tombol Edit
                         IconButton(onClick = {
                             onNavigateToEdit((uiState as ItemDetailUiState.Success).item.id)
                         }) {
@@ -77,6 +79,15 @@ fun ItemDetailScreen(
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                         }
+                        // Tombol Delete
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Default.DeleteOutline,
+                                contentDescription = "Hapus",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -439,5 +450,29 @@ private fun PolicyItem(
             Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
             Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
+    }
+    // Delete Dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Hapus Barang", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Yakin ingin menghapus barang ini? Semua data peminjaman terkait juga akan terpengaruh.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteItem { onNavigateBack() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Hapus") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
+            }
+        )
     }
 }

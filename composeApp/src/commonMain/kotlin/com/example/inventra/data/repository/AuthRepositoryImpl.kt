@@ -10,6 +10,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
@@ -38,10 +39,8 @@ class AuthRepositoryImpl : AuthRepository {
                 ?: return Result.failure(Exception("Gagal mengambil data user"))
             Result.success(user)
         } catch (e: Exception) {
-            // Log error asli
             println("LOGIN ERROR: ${e.message}")
-            println("LOGIN ERROR CLASS: ${e::class.simpleName}")
-            Result.failure(Exception("Error: ${e.message}"))
+            Result.failure(Exception(parseAuthError(e.message)))
         }
     }
 
@@ -49,7 +48,8 @@ class AuthRepositoryImpl : AuthRepository {
         email: String,
         password: String,
         name: String,
-        division: String
+        division: String,
+        role: String
     ): Result<User> {
         return try {
             auth.signUpWith(Email) {
@@ -57,15 +57,36 @@ class AuthRepositoryImpl : AuthRepository {
                 this.password = password
                 data = buildJsonObject {
                     put("name", name)
-                    put("role", "MEMBER")
+                    put("role", role)
                     put("division", division)
                 }
             }
-            val user = getCurrentUser()
-                ?: return Result.failure(Exception("Gagal membuat akun"))
-            Result.success(user)
+            try {
+                val allProfiles = db["profiles"].select().decodeList<ProfileDto>()
+                val newProfile = allProfiles.find { it.name == name }
+                if (newProfile == null) {
+                    db["profiles"].upsert(
+                        mapOf(
+                            "name" to name,
+                            "role" to role,
+                            "division" to division
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("Profile upsert: ${e.message}")
+            }
+            Result.success(
+                User(
+                    id = "",
+                    name = name,
+                    email = email,
+                    role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
+                    division = try { UserDivision.valueOf(division) } catch (e: Exception) { UserDivision.PUBDOK }
+                )
+            )
         } catch (e: Exception) {
-            Result.failure(Exception("Gagal mendaftar: ${e.message}"))
+            Result.failure(Exception("Gagal mendaftar: ${parseAuthError(e.message)}"))
         }
     }
 
@@ -86,7 +107,7 @@ class AuthRepositoryImpl : AuthRepository {
                     filter { eq("id", authUser.id) }
                     limit(1)
                 }
-                .decodeSingle<ProfileDto>()
+                .decodeSingleOrNull<ProfileDto>() ?: return null
             User(
                 id = profile.id,
                 name = profile.name,
@@ -103,13 +124,13 @@ class AuthRepositoryImpl : AuthRepository {
         }
     }
 
-    override suspend fun updateProfile(name: String, phone: String?): Result<User> {
+    override suspend fun updateProfile(name: String, phone: String?, avatarUrl: String?): Result<User> {
         return try {
             val userId = auth.currentUserOrNull()?.id
                 ?: return Result.failure(Exception("Tidak terautentikasi"))
-            db["profiles"].update(
-                mapOf("name" to name, "phone" to phone)
-            ) {
+            val updateMap = mutableMapOf<String, Any?>("name" to name, "phone" to phone)
+            if (avatarUrl != null) updateMap["avatar_url"] = avatarUrl
+            db["profiles"].update(updateMap) {
                 filter { eq("id", userId) }
             }
             val user = getCurrentUser()
@@ -117,6 +138,81 @@ class AuthRepositoryImpl : AuthRepository {
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun updateAvatar(imageBytes: ByteArray, fileName: String): Result<String> {
+        return try {
+            val userId = auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception("Tidak terautentikasi"))
+            val bucket = client.storage["avatars"]
+            val path = "$userId/$fileName"
+            // Gunakan UploadData untuk kompatibilitas Supabase Kotlin SDK
+            bucket.upload(path, imageBytes) { upsert = true }
+            val publicUrl = bucket.publicUrl(path)
+            db["profiles"].update(mapOf("avatar_url" to publicUrl)) {
+                filter { eq("id", userId) }
+            }
+            Result.success(publicUrl)
+        } catch (e: Exception) {
+            Result.failure(Exception("Gagal upload foto: ${e.message}"))
+        }
+    }
+
+    override suspend fun getAllUsers(): Result<List<User>> {
+        return try {
+            val profiles = db["profiles"]
+                .select(columns = Columns.ALL)
+                .decodeList<ProfileDto>()
+            val users = profiles.map { profile ->
+                User(
+                    id = profile.id,
+                    name = profile.name,
+                    email = "",
+                    role = try { UserRole.valueOf(profile.role) } catch (e: Exception) { UserRole.MEMBER },
+                    division = try { UserDivision.valueOf(profile.division) } catch (e: Exception) { UserDivision.PUBDOK },
+                    studentId = profile.studentId,
+                    phone = profile.phone,
+                    avatarUrl = profile.avatarUrl,
+                    isActive = profile.isActive
+                )
+            }
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteUser(userId: String): Result<Unit> {
+        return try {
+            db["profiles"].delete {
+                filter { eq("id", userId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateUserRole(userId: String, role: String): Result<Unit> {
+        return try {
+            db["profiles"].update(mapOf("role" to role)) {
+                filter { eq("id", userId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun parseAuthError(message: String?): String {
+        return when {
+            message == null -> "Terjadi kesalahan"
+            message.contains("Invalid login credentials") -> "Email atau password salah"
+            message.contains("Email not confirmed") -> "Email belum dikonfirmasi"
+            message.contains("User already registered") -> "Email sudah terdaftar"
+            message.contains("Password should be") -> "Password minimal 6 karakter"
+            else -> message
         }
     }
 }

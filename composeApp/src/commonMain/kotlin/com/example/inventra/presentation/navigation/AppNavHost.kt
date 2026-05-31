@@ -4,8 +4,16 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -14,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.presentation.screens.addedit.AddEditItemScreen
 import com.example.inventra.presentation.screens.ai.AIInventoryScreen
 import com.example.inventra.presentation.screens.auth.LoginScreen
@@ -21,33 +30,44 @@ import com.example.inventra.presentation.screens.catalog.CatalogScreen
 import com.example.inventra.presentation.screens.dashboard.DashboardScreen
 import com.example.inventra.presentation.screens.detail.ItemDetailScreen
 import com.example.inventra.presentation.screens.history.HistoryScreen
+import com.example.inventra.presentation.screens.management.UserManagementScreen
 import com.example.inventra.presentation.screens.profile.ProfileScreen
+import org.koin.compose.koinInject
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
-    startDestination: String = Routes.Login.route
+    navController: NavHostController = rememberNavController()
 ) {
+    val authRepository: AuthRepository = koinInject()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    var startDestination by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        startDestination = if (authRepository.isLoggedIn) {
+            Routes.Dashboard.route
+        } else {
+            Routes.Login.route
+        }
+    }
+
+    if (startDestination == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = startDestination!!,
         modifier = modifier,
-        enterTransition = {
-            slideInHorizontally(initialOffsetX = { it }) + fadeIn()
-        },
-        exitTransition = {
-            slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
-        },
-        popEnterTransition = {
-            slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
-        },
-        popExitTransition = {
-            slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
-        }
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+        exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
     ) {
         composable(Routes.Login.route) {
             LoginScreen(
@@ -106,8 +126,7 @@ fun AppNavHost(
                 }
             )
         ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getLong("itemId")
-                ?.takeIf { it != -1L }
+            val itemId = backStackEntry.arguments?.getLong("itemId")?.takeIf { it != -1L }
             AddEditItemScreen(
                 itemId = itemId,
                 onNavigateBack = { navController.popBackStack() },
@@ -137,7 +156,16 @@ fun AppNavHost(
                     navController.navigate(Routes.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onNavigateToUserManagement = {
+                    navController.navigate(Routes.UserManagement.route)
                 }
+            )
+        }
+
+        composable(Routes.UserManagement.route) {
+            UserManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
@@ -146,9 +174,7 @@ fun AppNavHost(
 private fun navigateBottomNav(navController: NavHostController, route: String) {
     if (navController.currentDestination?.route != route) {
         navController.navigate(route) {
-            popUpTo(Routes.Dashboard.route) {
-                saveState = true
-            }
+            popUpTo(Routes.Dashboard.route) { saveState = true }
             launchSingleTop = true
             restoreState = true
         }

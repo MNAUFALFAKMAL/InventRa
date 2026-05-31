@@ -8,6 +8,7 @@ sealed class Routes(val route: String) {
     object AskAI : Routes("ask_ai_screen")
     object AddEditItem : Routes("add_edit_item_screen")
     object Profile : Routes("profile_screen")
+    object UserManagement : Routes("user_management_screen")
 
     object ItemDetail : Routes("item_detail_screen/{itemId}") {
         fun createRoute(itemId: String) = "item_detail_screen/$itemId"

@@ -12,9 +12,14 @@ interface AuthRepository {
         email: String,
         password: String,
         name: String,
-        division: String
+        division: String,
+        role: String = "MEMBER"
     ): Result<User>
     suspend fun logout(): Result<Unit>
     suspend fun getCurrentUser(): User?
-    suspend fun updateProfile(name: String, phone: String?): Result<User>
+    suspend fun updateProfile(name: String, phone: String?, avatarUrl: String?): Result<User>
+    suspend fun updateAvatar(imageBytes: ByteArray, fileName: String): Result<String>
+    suspend fun getAllUsers(): Result<List<User>>
+    suspend fun deleteUser(userId: String): Result<Unit>
+    suspend fun updateUserRole(userId: String, role: String): Result<Unit>
 }

@@ -138,52 +138,74 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
-            // URL Foto Barang
-            OutlinedTextField(
-                value = uiState.imageUrl,
-                onValueChange = viewModel::onImageUrlChange,
-                label = { Text("URL Foto Barang (opsional)") },
-                placeholder = { Text("https://...") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Image,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                }
+            // ==================== FOTO BARANG ====================
+            Text(
+                "Foto Barang",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.outline
             )
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Preview foto jika URL diisi
-            if (uiState.imageUrl.isNotBlank()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+// Preview foto atau placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { /* trigger file picker — lihat catatan di bawah */ },
+                contentAlignment = Alignment.Center
+            ) {
+                if (uiState.imageUrl.isNotBlank()) {
+                    // Tampilkan URL singkat sebagai konfirmasi sudah ada foto
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.Image,
+                            Icons.Default.CheckCircle,
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.outline
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Foto sudah dipilih",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
                         )
                         Text(
-                            "Preview foto akan tampil saat URL valid",
+                            uiState.imageUrl.takeLast(40),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(top = 60.dp)
+                            color = MaterialTheme.colorScheme.outline
                         )
                     }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Tap untuk pilih foto",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+            }
+
+// Tombol hapus foto jika ada
+            if (uiState.imageUrl.isNotBlank()) {
+                TextButton(
+                    onClick = { viewModel.onImageUrlChange("") },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Hapus Foto", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
