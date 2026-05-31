@@ -69,7 +69,6 @@ fun ItemDetailScreen(
                 },
                 actions = {
                     if (uiState is ItemDetailUiState.Success) {
-                        // Tombol Edit
                         IconButton(onClick = {
                             onNavigateToEdit((uiState as ItemDetailUiState.Success).item.id)
                         }) {
@@ -79,15 +78,13 @@ fun ItemDetailScreen(
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                         }
-                        // Tombol Delete
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
-                                Icons.Default.DeleteOutline,
+                                Icons.Default.Delete,
                                 contentDescription = "Hapus",
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
-                    }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,19 +99,22 @@ fun ItemDetailScreen(
                 val whatsappUrl = "https://wa.me/6287714891011?text=" +
                         "Halo Admin, saya ingin info peminjaman *${item.name}* " +
                         "dari inventaris HMIF ITERA."
-
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
                             onClick = { uriHandler.openUri(whatsappUrl) },
-                            modifier = Modifier.weight(1f).height(48.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(Icons.Default.Phone, contentDescription = null)
@@ -124,7 +124,9 @@ fun ItemDetailScreen(
                         Button(
                             onClick = { showBorrowDialog = true },
                             enabled = item.isBorrowable,
-                            modifier = Modifier.weight(1f).height(48.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -145,25 +147,26 @@ fun ItemDetailScreen(
             is ItemDetailUiState.Loading -> {
                 LoadingIndicator(modifier = Modifier.padding(paddingValues))
             }
-
             is ItemDetailUiState.NotFound -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Barang tidak ditemukan", color = MaterialTheme.colorScheme.outline)
                 }
             }
-
             is ItemDetailUiState.Error -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(state.message, color = MaterialTheme.colorScheme.error)
                 }
             }
-
             is ItemDetailUiState.Success -> {
                 val item = state.item
                 Column(
@@ -173,7 +176,6 @@ fun ItemDetailScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
-                    // Image placeholder
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -184,16 +186,12 @@ fun ItemDetailScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.Inventory2,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                            )
-                        }
-
-                        // Status badge
+                        Icon(
+                            Icons.Default.Inventory2,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                        )
                         Surface(
                             color = if (item.isBorrowable)
                                 MaterialTheme.colorScheme.primaryContainer
@@ -277,7 +275,6 @@ fun ItemDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Info Card
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -304,11 +301,14 @@ fun ItemDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Policy Card
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Policy, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                Icon(
+                                    Icons.Default.Policy,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     "Kebijakan Peminjaman",
@@ -336,9 +336,7 @@ fun ItemDetailScreen(
     if (showBorrowDialog) {
         AlertDialog(
             onDismissRequest = { showBorrowDialog = false },
-            title = {
-                Text("Ajukan Peminjaman", fontWeight = FontWeight.Bold)
-            },
+            title = { Text("Ajukan Peminjaman", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -346,8 +344,6 @@ fun ItemDetailScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
-
-                    // Nama peminjam
                     OutlinedTextField(
                         value = borrowerName,
                         onValueChange = { borrowerName = it },
@@ -356,8 +352,6 @@ fun ItemDetailScreen(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    // Dropdown divisi
                     ExposedDropdownMenuBox(
                         expanded = showDivisionDropdown,
                         onExpandedChange = { showDivisionDropdown = it }
@@ -370,7 +364,9 @@ fun ItemDetailScreen(
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDivisionDropdown)
                             },
-                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
                             shape = RoundedCornerShape(8.dp)
                         )
                         ExposedDropdownMenu(
@@ -411,9 +407,32 @@ fun ItemDetailScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBorrowDialog = false }) {
-                    Text("Batal")
-                }
+                TextButton(onClick = { showBorrowDialog = false }) { Text("Batal") }
+            }
+        )
+    }
+
+    // ==================== DELETE DIALOG ====================
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Hapus Barang", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Yakin ingin menghapus barang ini? Tindakan tidak dapat dibatalkan.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteItem { onNavigateBack() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Hapus") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
             }
         )
     }
@@ -422,7 +441,9 @@ fun ItemDetailScreen(
 @Composable
 private fun InfoRow(label: String, value: String, isLast: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
@@ -443,36 +464,19 @@ private fun PolicyItem(
     val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp).size(20.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(20.dp)
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
             Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
-    }
-    // Delete Dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Hapus Barang", fontWeight = FontWeight.Bold) },
-            text = {
-                Text("Yakin ingin menghapus barang ini? Semua data peminjaman terkait juga akan terpengaruh.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.deleteItem { onNavigateBack() }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) { Text("Hapus") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
-            }
-        )
     }
 }

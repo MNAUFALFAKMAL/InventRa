@@ -1,17 +1,22 @@
 package com.example.inventra.presentation.screens.addedit
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,11 +34,6 @@ fun AddEditItemScreen(
 ) {
     val viewModel: AddEditItemViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // Navigate back setelah save sukses
-    LaunchedEffect(uiState.isSaving) {
-        // isSaving berubah false setelah sukses (error akan mengisi uiState.error)
-    }
 
     Scaffold(
         topBar = {
@@ -82,7 +82,6 @@ fun AddEditItemScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Error message
             if (uiState.error != null) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -98,7 +97,6 @@ fun AddEditItemScreen(
                 }
             }
 
-            // Nama Barang
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
@@ -108,17 +106,17 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
-            // Deskripsi
             OutlinedTextField(
                 value = uiState.description,
                 onValueChange = viewModel::onDescriptionChange,
                 label = { Text("Deskripsi") },
-                modifier = Modifier.fillMaxWidth().height(100.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
                 shape = RoundedCornerShape(12.dp),
                 maxLines = 4
             )
 
-            // Lokasi
             OutlinedTextField(
                 value = uiState.location,
                 onValueChange = viewModel::onLocationChange,
@@ -128,7 +126,6 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
-            // PIC
             OutlinedTextField(
                 value = uiState.picName,
                 onValueChange = viewModel::onPicNameChange,
@@ -140,24 +137,21 @@ fun AddEditItemScreen(
 
             // ==================== FOTO BARANG ====================
             Text(
-                "Foto Barang",
+                "Foto Barang (Opsional)",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )
-            Spacer(modifier = Modifier.height(4.dp))
 
-// Preview foto atau placeholder
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { /* trigger file picker — lihat catatan di bawah */ },
+                    .clickable { /* File picker — perlu implement ImagePicker expect/actual */ },
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.imageUrl.isNotBlank()) {
-                    // Tampilkan URL singkat sebagai konfirmasi sudah ada foto
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.CheckCircle,
@@ -191,11 +185,15 @@ fun AddEditItemScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
+                        Text(
+                            "Upload dari galeri perangkat",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
+                        )
                     }
                 }
             }
 
-// Tombol hapus foto jika ada
             if (uiState.imageUrl.isNotBlank()) {
                 TextButton(
                     onClick = { viewModel.onImageUrlChange("") },
@@ -203,13 +201,16 @@ fun AddEditItemScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Hapus Foto", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            // Stok Row
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = uiState.totalStock,
@@ -229,17 +230,8 @@ fun AddEditItemScreen(
                 )
             }
 
-            // Dropdown Kategori
-            CategoryDropdown(
-                selected = uiState.category,
-                onSelected = viewModel::onCategoryChange
-            )
-
-            // Dropdown Kondisi
-            ConditionDropdown(
-                selected = uiState.condition,
-                onSelected = viewModel::onConditionChange
-            )
+            CategoryDropdown(selected = uiState.category, onSelected = viewModel::onCategoryChange)
+            ConditionDropdown(selected = uiState.condition, onSelected = viewModel::onConditionChange)
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -248,37 +240,26 @@ fun AddEditItemScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CategoryDropdown(
-    selected: ItemCategory,
-    onSelected: (ItemCategory) -> Unit
-) {
+private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val categories = ItemCategory.entries.filter { it != ItemCategory.ALL }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.displayName,
             onValueChange = {},
             readOnly = true,
             label = { Text("Kategori") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
             shape = RoundedCornerShape(12.dp)
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             categories.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(category.displayName) },
-                    onClick = {
-                        onSelected(category)
-                        expanded = false
-                    }
+                    onClick = { onSelected(category); expanded = false }
                 )
             }
         }
@@ -287,36 +268,25 @@ private fun CategoryDropdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConditionDropdown(
-    selected: ItemCondition,
-    onSelected: (ItemCondition) -> Unit
-) {
+private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemCondition) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.displayName,
             onValueChange = {},
             readOnly = true,
             label = { Text("Kondisi Barang") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
             shape = RoundedCornerShape(12.dp)
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ItemCondition.entries.forEach { condition ->
                 DropdownMenuItem(
                     text = { Text(condition.displayName) },
-                    onClick = {
-                        onSelected(condition)
-                        expanded = false
-                    }
+                    onClick = { onSelected(condition); expanded = false }
                 )
             }
         }
