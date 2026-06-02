@@ -46,17 +46,32 @@ class ItemDetailViewModel(
         }
     }
 
-    /**
-     * Buat permintaan peminjaman dengan status PENDING.
-     * Admin (Nabila) perlu approve dari HistoryScreen.
-     */
-    fun requestBorrow(borrowerName: String, borrowerDivision: String, onSuccess: () -> Unit) {
+    fun requestBorrow(
+        borrowerName: String,
+        borrowerDivision: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit = {}
+    ) {
         val currentState = uiState.value
-        if (currentState !is ItemDetailUiState.Success) return
+        println("DEBUG requestBorrow called, state=$currentState, name=$borrowerName")
+
+        if (currentState !is ItemDetailUiState.Success) {
+            println("DEBUG requestBorrow: state bukan Success, return")
+            onError("Data barang belum dimuat, coba lagi")
+            return
+        }
+
+        val item = currentState.item
+        println("DEBUG item available=${item.availableStock} total=${item.totalStock} isBorrowable=${item.isBorrowable}")
+
+        if (item.availableStock <= 0) {
+            println("DEBUG stok habis")
+            onError("Stok barang habis")
+            return
+        }
 
         viewModelScope.launch {
-            val item = currentState.item
-            if (item.availableStock > 0) {
+            try {
                 val now = Clock.System.now()
                 val dueDate = now.plus(2, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
 
@@ -69,8 +84,13 @@ class ItemDetailViewModel(
                     status = BorrowStatus.PENDING
                 )
 
-                borrowRepository.borrowItem(record)
+                println("DEBUG inserting borrow record for itemId=${item.id}")
+                val id = borrowRepository.borrowItem(record)
+                println("DEBUG borrow berhasil, localId=$id")
                 onSuccess()
+            } catch (e: Exception) {
+                println("DEBUG borrow error: ${e.message}")
+                onError(e.message ?: "Gagal meminjam, coba lagi")
             }
         }
     }

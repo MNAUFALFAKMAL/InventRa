@@ -32,13 +32,18 @@ fun ItemDetailScreen(
     val viewModel: ItemDetailViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Semua dialog state di level tertinggi composable
     var showBorrowDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var borrowerName by remember { mutableStateOf("") }
     var borrowerDivision by remember { mutableStateOf(UserDivision.PUBDOK) }
     var showDivisionDropdown by remember { mutableStateOf(false) }
+    var borrowError by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     var snackbarMessage by remember { mutableStateOf("") }
+
+    // Resolve successState di luar Scaffold agar bisa diakses di bottomBar
+    val successState = uiState as? ItemDetailUiState.Success
 
     LaunchedEffect(snackbarMessage) {
         if (snackbarMessage.isNotBlank()) {
@@ -68,10 +73,8 @@ fun ItemDetailScreen(
                     }
                 },
                 actions = {
-                    if (uiState is ItemDetailUiState.Success) {
-                        IconButton(onClick = {
-                            onNavigateToEdit((uiState as ItemDetailUiState.Success).item.id)
-                        }) {
+                    if (successState != null) {
+                        IconButton(onClick = { onNavigateToEdit(successState.item.id) }) {
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Edit",
@@ -93,12 +96,14 @@ fun ItemDetailScreen(
             )
         },
         bottomBar = {
-            if (uiState is ItemDetailUiState.Success) {
-                val item = (uiState as ItemDetailUiState.Success).item
+            // Gunakan successState yang sudah di-resolve di atas
+            if (successState != null) {
+                val item = successState.item
                 val uriHandler = LocalUriHandler.current
                 val whatsappUrl = "https://wa.me/6287714891011?text=" +
                         "Halo Admin, saya ingin info peminjaman *${item.name}* " +
                         "dari inventaris HMIF ITERA."
+
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
@@ -122,7 +127,10 @@ fun ItemDetailScreen(
                             Text("Hubungi PIC")
                         }
                         Button(
-                            onClick = { showBorrowDialog = true },
+                            onClick = {
+                                borrowError = ""
+                                showBorrowDialog = true
+                            },
                             enabled = item.isBorrowable,
                             modifier = Modifier
                                 .weight(1f)
@@ -147,6 +155,7 @@ fun ItemDetailScreen(
             is ItemDetailUiState.Loading -> {
                 LoadingIndicator(modifier = Modifier.padding(paddingValues))
             }
+
             is ItemDetailUiState.NotFound -> {
                 Box(
                     modifier = Modifier
@@ -154,9 +163,13 @@ fun ItemDetailScreen(
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Barang tidak ditemukan", color = MaterialTheme.colorScheme.outline)
+                    Text(
+                        "Barang tidak ditemukan",
+                        color = MaterialTheme.colorScheme.outline
+                    )
                 }
             }
+
             is ItemDetailUiState.Error -> {
                 Box(
                     modifier = Modifier
@@ -167,8 +180,13 @@ fun ItemDetailScreen(
                     Text(state.message, color = MaterialTheme.colorScheme.error)
                 }
             }
+
             is ItemDetailUiState.Success -> {
                 val item = state.item
+
+                // Debug log
+                println("DEBUG UI item: name=${item.name} available=${item.availableStock} total=${item.totalStock} isBorrowable=${item.isBorrowable}")
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -176,6 +194,7 @@ fun ItemDetailScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
+                    // Image placeholder
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -192,6 +211,8 @@ fun ItemDetailScreen(
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
                         )
+
+                        // Status badge
                         Surface(
                             color = if (item.isBorrowable)
                                 MaterialTheme.colorScheme.primaryContainer
@@ -203,7 +224,10 @@ fun ItemDetailScreen(
                                 .padding(12.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp
+                                ),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -275,6 +299,7 @@ fun ItemDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // Info Card
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -301,6 +326,7 @@ fun ItemDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Policy Card
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -318,11 +344,24 @@ fun ItemDetailScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            PolicyItem(Icons.Default.CalendarToday, "Durasi Maksimal", "2 Hari Kalender")
+                            PolicyItem(
+                                Icons.Default.CalendarToday,
+                                "Durasi Maksimal",
+                                "2 Hari Kalender"
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
-                            PolicyItem(Icons.Default.Payments, "Denda Keterlambatan", "Rp 10.000 / Hari", isError = true)
+                            PolicyItem(
+                                Icons.Default.Payments,
+                                "Denda Keterlambatan",
+                                "Rp 10.000 / Hari",
+                                isError = true
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
-                            PolicyItem(Icons.Default.Person, "Admin", "Nabila Ramadhani Mujahidin (Bendahara Umum)")
+                            PolicyItem(
+                                Icons.Default.Person,
+                                "Admin",
+                                "Nabila Ramadhani Mujahidin (Bendahara Umum)"
+                            )
                         }
                     }
 
@@ -333,9 +372,14 @@ fun ItemDetailScreen(
     }
 
     // ==================== BORROW DIALOG ====================
+    // Di luar Scaffold agar state showBorrowDialog bisa diakses
+    // dari bottomBar dan dialog ini tanpa masalah scope
     if (showBorrowDialog) {
         AlertDialog(
-            onDismissRequest = { showBorrowDialog = false },
+            onDismissRequest = {
+                showBorrowDialog = false
+                borrowError = ""
+            },
             title = { Text("Ajukan Peminjaman", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -344,6 +388,7 @@ fun ItemDetailScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
+
                     OutlinedTextField(
                         value = borrowerName,
                         onValueChange = { borrowerName = it },
@@ -352,6 +397,7 @@ fun ItemDetailScreen(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
+
                     ExposedDropdownMenuBox(
                         expanded = showDivisionDropdown,
                         onExpandedChange = { showDivisionDropdown = it }
@@ -362,7 +408,9 @@ fun ItemDetailScreen(
                             readOnly = true,
                             label = { Text("Divisi") },
                             trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDivisionDropdown)
+                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                    expanded = showDivisionDropdown
+                                )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -384,19 +432,42 @@ fun ItemDetailScreen(
                             }
                         }
                     }
+
+                    // Tampilkan error jika ada
+                    if (borrowError.isNotBlank()) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                borrowError,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (borrowerName.isNotBlank()) {
+                            borrowError = ""
                             viewModel.requestBorrow(
                                 borrowerName = borrowerName,
                                 borrowerDivision = borrowerDivision.displayName,
                                 onSuccess = {
                                     showBorrowDialog = false
                                     borrowerName = ""
-                                    snackbarMessage = "✅ Permintaan peminjaman terkirim! Tunggu konfirmasi admin."
+                                    borrowError = ""
+                                    snackbarMessage =
+                                        "✅ Permintaan peminjaman terkirim! Tunggu konfirmasi admin."
+                                },
+                                onError = { msg ->
+                                    borrowError = msg
                                 }
                             )
                         }
@@ -407,7 +478,12 @@ fun ItemDetailScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBorrowDialog = false }) { Text("Batal") }
+                TextButton(onClick = {
+                    showBorrowDialog = false
+                    borrowError = ""
+                }) {
+                    Text("Batal")
+                }
             }
         )
     }
@@ -432,11 +508,15 @@ fun ItemDetailScreen(
                 ) { Text("Hapus") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Batal")
+                }
             }
         )
     }
 }
+
+// ==================== PRIVATE COMPOSABLES ====================
 
 @Composable
 private fun InfoRow(label: String, value: String, isLast: Boolean = false) {
@@ -446,11 +526,21 @@ private fun InfoRow(label: String, value: String, isLast: Boolean = false) {
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
-        Text(value, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.outline,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            value,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
     if (!isLast) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        )
     }
 }
 
@@ -461,9 +551,13 @@ private fun PolicyItem(
     desc: String,
     isError: Boolean = false
 ) {
-    val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+    val color = if (isError) MaterialTheme.colorScheme.error
+    else MaterialTheme.colorScheme.secondary
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+        Surface(
+            color = color.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(8.dp)
+        ) {
             Icon(
                 icon,
                 contentDescription = null,
@@ -475,8 +569,16 @@ private fun PolicyItem(
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-            Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            Text(
+                title,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                desc,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }

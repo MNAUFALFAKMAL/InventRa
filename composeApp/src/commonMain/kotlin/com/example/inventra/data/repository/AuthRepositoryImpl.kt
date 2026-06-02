@@ -52,6 +52,7 @@ class AuthRepositoryImpl : AuthRepository {
         role: String
     ): Result<User> {
         return try {
+            // Step 1: Daftarkan user ke Supabase Auth
             auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
@@ -61,32 +62,53 @@ class AuthRepositoryImpl : AuthRepository {
                     put("division", division)
                 }
             }
-            try {
-                val allProfiles = db["profiles"].select().decodeList<ProfileDto>()
-                val newProfile = allProfiles.find { it.name == name }
-                if (newProfile == null) {
-                    db["profiles"].upsert(
-                        mapOf(
-                            "name" to name,
-                            "role" to role,
-                            "division" to division
+
+            // Step 2: Tunggu sebentar agar trigger sempat berjalan
+            kotlinx.coroutines.delay(500)
+
+            // Step 3: Coba ambil user yang baru dibuat
+            val authUser = auth.currentUserOrNull()
+
+            // Step 4: Jika trigger belum jalan, insert manual ke profiles
+            if (authUser != null) {
+                try {
+                    val existingProfile = db["profiles"]
+                        .select { filter { eq("id", authUser.id) } }
+                        .decodeSingleOrNull<ProfileDto>()
+
+                    if (existingProfile == null) {
+                        // Trigger belum jalan, insert manual
+                        db["profiles"].insert(
+                            mapOf(
+                                "id" to authUser.id,
+                                "name" to name,
+                                "role" to role,
+                                "division" to division
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    println("Profile insert manual: ${e.message}")
+                    // Tidak masalah jika gagal — trigger mungkin sudah jalan
                 }
-            } catch (e: Exception) {
-                println("Profile upsert: ${e.message}")
             }
+
             Result.success(
                 User(
-                    id = "",
+                    id = authUser?.id ?: "",
                     name = name,
                     email = email,
                     role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
-                    division = try { UserDivision.valueOf(division) } catch (e: Exception) { UserDivision.PUBDOK }
+                    division = try {
+                        UserDivision.valueOf(division)
+                    } catch (e: Exception) {
+                        UserDivision.PUBDOK
+                    }
                 )
             )
         } catch (e: Exception) {
-            Result.failure(Exception("Gagal mendaftar: ${parseAuthError(e.message)}"))
+            println("REGISTER ERROR: ${e.message}")
+            Result.failure(Exception(parseAuthError(e.message)))
         }
     }
 

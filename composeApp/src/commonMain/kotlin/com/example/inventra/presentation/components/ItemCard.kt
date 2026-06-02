@@ -1,6 +1,7 @@
 package com.example.inventra.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,9 +27,14 @@ fun ItemCard(
     onBorrowClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassCard(modifier = modifier.fillMaxWidth()) {
+    // FIX: clickable di level Card terluar agar seluruh area bisa di-tap
+    GlassCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Placeholder Image Area
+            // Image Area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -52,8 +58,12 @@ fun ItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Title & Status Icon
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            // Title & Status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -63,15 +73,17 @@ fun ItemCard(
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
-                    imageVector = if (isAvailable) Icons.Default.CheckCircle else Icons.Default.Error,
+                    imageVector = if (isAvailable) Icons.Default.CheckCircle
+                    else Icons.Default.Error,
                     contentDescription = "Status",
-                    tint = if (isAvailable) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
+                    tint = if (isAvailable) MaterialTheme.colorScheme.secondary
+                    else MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(16.dp)
                 )
             }
 
             Text(
-                text = description,
+                text = description.ifBlank { "Tidak ada deskripsi" },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 maxLines = 2,
@@ -79,17 +91,32 @@ fun ItemCard(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Stock & Action Button
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            // Stock & Action
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column {
-                    Text("STOK", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                    Text("$stock Unit", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text(
+                        "STOK",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        "$stock Unit",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Button(
-                    onClick = onBorrowClick,
+                    onClick = { onBorrowClick() },
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     enabled = stock > 0

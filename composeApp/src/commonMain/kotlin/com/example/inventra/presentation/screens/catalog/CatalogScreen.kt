@@ -29,7 +29,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CatalogScreen(
     currentRoute: String,
     onNavigate: (String) -> Unit,
-    onNavigateToDetail: (String) -> Unit,
+    onNavigateToDetail: (Long) -> Unit,
     onNavigateToAddItem: () -> Unit
 ) {
     val viewModel: CatalogViewModel = koinViewModel()
@@ -104,7 +104,7 @@ fun CatalogScreen(
                 }
             )
 
-            // Filter Chips kategori
+            // Filter Chips
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -123,11 +123,8 @@ fun CatalogScreen(
                 }
             }
 
-            // Konten
             when (val state = uiState) {
-                is CatalogUiState.Loading -> {
-                    LoadingIndicator()
-                }
+                is CatalogUiState.Loading -> LoadingIndicator()
 
                 is CatalogUiState.Empty -> {
                     EmptyState(
@@ -160,8 +157,15 @@ fun CatalogScreen(
                                 description = item.description,
                                 stock = item.availableStock,
                                 isAvailable = item.isBorrowable,
-                                onClick = { onNavigateToDetail(item.name) },
-                                onBorrowClick = {}
+                                // FIX: gunakan item.id bukan item.name
+                                onClick = {
+                                    println("DEBUG CatalogScreen: tap item id=${item.id} name=${item.name}")
+                                    onNavigateToDetail(item.id)
+                                },
+                                onBorrowClick = {
+                                    println("DEBUG CatalogScreen: borrow tap item id=${item.id}")
+                                    onNavigateToDetail(item.id)
+                                }
                             )
                         }
                     }
