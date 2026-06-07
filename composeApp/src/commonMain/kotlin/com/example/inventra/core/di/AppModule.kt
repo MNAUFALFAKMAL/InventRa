@@ -59,6 +59,7 @@ val repositoryModule = module {
     single<BorrowRepository> { BorrowRepositoryImpl(get()) }
     singleOf(::AIRepositoryImpl) bind AIRepository::class
 }
+
 val useCaseModule = module {
     singleOf(::GetAllItemsUseCase)
     singleOf(::SearchItemsUseCase)
@@ -68,13 +69,12 @@ val useCaseModule = module {
 
 val viewModelModule = module {
     viewModelOf(::LoginViewModel)
-    // DashboardViewModel: pakai single karena koin tidak bisa auto-resolve 2 params berbeda interface
-    single { DashboardViewModel(get(), get()) }
+    viewModelOf(::DashboardViewModel)
     viewModelOf(::CatalogViewModel)
     viewModelOf(::HistoryViewModel)
     viewModelOf(::AIInventoryViewModel)
-    single { ProfileViewModel(get()) }
-    single { UserManagementViewModel(get()) }
+    viewModelOf(::ProfileViewModel)
+    viewModelOf(::UserManagementViewModel)
     factory { (itemId: Long?) -> AddEditItemViewModel(itemId, get(), get()) }
     factory { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get()) }
 }

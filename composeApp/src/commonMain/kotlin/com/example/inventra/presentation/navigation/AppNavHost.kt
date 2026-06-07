@@ -162,6 +162,12 @@ fun AppNavHost(
                 }
             )
         }
+
+        composable(Routes.UserManagement.route) {
+            UserManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
