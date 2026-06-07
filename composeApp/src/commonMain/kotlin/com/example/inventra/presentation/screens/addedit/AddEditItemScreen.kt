@@ -7,19 +7,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import com.example.inventra.core.util.rememberImagePickerLauncher
 import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.domain.model.ItemCondition
 import org.koin.compose.viewmodel.koinViewModel
@@ -35,19 +34,24 @@ fun AddEditItemScreen(
     val viewModel: AddEditItemViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Image picker dari galeri HP — harus di level Composable, bukan di dalam onClick
+    val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
+        viewModel.uploadAndSaveImage(bytes, fileName)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (itemId != null) "Edit Barang" else "Tambah Barang",
+                        if (itemId != null) "Edit Barang" else "Tambah Barang",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.Default.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -58,8 +62,7 @@ fun AddEditItemScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.saveItem(onSuccess = onSaveSuccess) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
@@ -68,7 +71,7 @@ fun AddEditItemScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Icon(Icons.Default.Save, contentDescription = "Simpan")
+                    Icon(Icons.Default.Save, "Simpan")
                 }
             }
         },
@@ -82,6 +85,7 @@ fun AddEditItemScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Error
             if (uiState.error != null) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -89,7 +93,7 @@ fun AddEditItemScreen(
                     )
                 ) {
                     Text(
-                        text = uiState.error!!,
+                        uiState.error!!,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(12.dp)
@@ -97,6 +101,7 @@ fun AddEditItemScreen(
                 }
             }
 
+            // Nama Barang
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
@@ -106,17 +111,17 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
+            // Deskripsi
             OutlinedTextField(
                 value = uiState.description,
                 onValueChange = viewModel::onDescriptionChange,
                 label = { Text("Deskripsi") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
                 maxLines = 4
             )
 
+            // Lokasi
             OutlinedTextField(
                 value = uiState.location,
                 onValueChange = viewModel::onLocationChange,
@@ -126,6 +131,7 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
+            // PIC
             OutlinedTextField(
                 value = uiState.picName,
                 onValueChange = viewModel::onPicNameChange,
@@ -135,9 +141,9 @@ fun AddEditItemScreen(
                 singleLine = true
             )
 
-            // ==================== FOTO BARANG ====================
+            // ── Foto Barang dari Galeri ──────────────────────────────────────
             Text(
-                "Foto Barang (Opsional)",
+                "Foto Barang",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -145,72 +151,98 @@ fun AddEditItemScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { /* File picker — perlu implement ImagePicker expect/actual */ },
+                    .clickable(enabled = !uiState.isSaving) { imagePicker.launch() },
                 contentAlignment = Alignment.Center
             ) {
-                if (uiState.imageUrl.isNotBlank()) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Foto sudah dipilih",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        Text(
-                            uiState.imageUrl.takeLast(40),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                when {
+                    uiState.isSaving && uiState.imageUrl.isBlank() -> {
+                        // Sedang upload
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Mengupload foto...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
                     }
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.AddPhotoAlternate,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(48.dp)
+                    uiState.imageUrl.isNotBlank() -> {
+                        // Foto sudah ada — tampilkan preview
+                        AsyncImage(
+                            model = uiState.imageUrl,
+                            contentDescription = "Foto barang",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Tap untuk pilih foto",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        Text(
-                            "Upload dari galeri perangkat",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
-                        )
+                        // Overlay tombol ganti
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Text(
+                                    "Tap untuk ganti foto",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        // Belum ada foto
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.AddPhotoAlternate,
+                                null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Tap untuk pilih dari galeri",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                "JPG, PNG didukung",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                            )
+                        }
                     }
                 }
             }
 
-            if (uiState.imageUrl.isNotBlank()) {
+            // Hapus foto jika sudah ada
+            if (uiState.imageUrl.isNotBlank() && !uiState.isSaving) {
                 TextButton(
                     onClick = { viewModel.onImageUrlChange("") },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Hapus Foto", style = MaterialTheme.typography.labelMedium)
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Hapus Foto")
                 }
             }
 
+            // Stok
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = uiState.totalStock,
@@ -233,7 +265,7 @@ fun AddEditItemScreen(
             CategoryDropdown(selected = uiState.category, onSelected = viewModel::onCategoryChange)
             ConditionDropdown(selected = uiState.condition, onSelected = viewModel::onConditionChange)
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -245,21 +277,17 @@ private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) 
     val categories = ItemCategory.entries.filter { it != ItemCategory.ALL }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected.displayName,
-            onValueChange = {},
-            readOnly = true,
+            value = selected.displayName, onValueChange = {}, readOnly = true,
             label = { Text("Kategori") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            categories.forEach { category ->
+            categories.forEach { cat ->
                 DropdownMenuItem(
-                    text = { Text(category.displayName) },
-                    onClick = { onSelected(category); expanded = false }
+                    text = { Text(cat.displayName) },
+                    onClick = { onSelected(cat); expanded = false }
                 )
             }
         }
@@ -272,21 +300,17 @@ private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemConditio
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected.displayName,
-            onValueChange = {},
-            readOnly = true,
+            value = selected.displayName, onValueChange = {}, readOnly = true,
             label = { Text("Kondisi Barang") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ItemCondition.entries.forEach { condition ->
+            ItemCondition.entries.forEach { cond ->
                 DropdownMenuItem(
-                    text = { Text(condition.displayName) },
-                    onClick = { onSelected(condition); expanded = false }
+                    text = { Text(cond.displayName) },
+                    onClick = { onSelected(cond); expanded = false }
                 )
             }
         }

@@ -13,7 +13,7 @@ fun ItemEntity.toDomain(): Item {
         category = try { ItemCategory.valueOf(category) } catch (e: Exception) { ItemCategory.OTHER },
         location = location,
         totalStock = total_stock.toInt(),
-        availableStock = available_stock.toInt(),
+        availableStock = available_stock.toInt(), // FIX: bukan quantity
         condition = try { ItemCondition.valueOf(condition) } catch (e: Exception) { ItemCondition.GOOD },
         picName = pic_name,
         imageUrl = image_url,

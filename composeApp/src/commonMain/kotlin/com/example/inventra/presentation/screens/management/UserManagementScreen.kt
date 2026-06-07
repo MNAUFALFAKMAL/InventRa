@@ -141,6 +141,18 @@ class UserManagementViewModel(
     }
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
+    fun editUserName(userId: String, newName: String) {
+        viewModelScope.launch {
+            authRepository.updateUserName(userId, newName)
+                .onSuccess {
+                    _uiState.update { it.copy(successMessage = "Nama berhasil diubah") }
+                    loadUsers()
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
 }
 
 // ==================== SCREEN ====================
@@ -266,7 +278,8 @@ fun UserManagementScreen(
                         UserCard(
                             user = user,
                             onDelete = { viewModel.deleteUser(user.id, user.name) },
-                            onToggleRole = { viewModel.toggleRole(user) }
+                            onToggleRole = { viewModel.toggleRole(user) },
+                            onEditName = { newName -> viewModel.editUserName(user.id, newName) }
                         )
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -296,10 +309,15 @@ fun UserManagementScreen(
 private fun UserCard(
     user: User,
     onDelete: () -> Unit,
-    onToggleRole: () -> Unit
+    onToggleRole: () -> Unit,
+    onEditName: (newName: String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val isAdmin = user.role == UserRole.ADMIN
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var editNameValue by remember { mutableStateOf(user.name) }
+    val isAdmin = user.role == UserRole.ADMIN  // FIX: pakai user parameter, bukan currentUser
+
+    // HAPUS NavigationItem block - tidak ada di sini
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -307,24 +325,18 @@ private fun UserCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isAdmin)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-            else
-                MaterialTheme.colorScheme.surface
+            else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar placeholder
             Surface(
                 shape = CircleShape,
-                color = if (isAdmin)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.secondaryContainer,
+                color = if (isAdmin) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -332,90 +344,70 @@ private fun UserCard(
                         user.name.take(1).uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isAdmin)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            MaterialTheme.colorScheme.onSecondaryContainer
+                        color = if (isAdmin) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        user.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(user.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     if (isAdmin) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                "ADMIN",
-                                style = MaterialTheme.typography.labelSmall,
+                        Spacer(Modifier.width(6.dp))
+                        Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
+                            Text("ADMIN", style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
                 }
-                Text(
-                    user.division.displayName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Text(user.division.displayName, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline)
             }
-
-            // Toggle role button
-            IconButton(
-                onClick = onToggleRole,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.Person,
-                    contentDescription = "Toggle Role",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
+            IconButton(onClick = { editNameValue = user.name; showEditNameDialog = true },
+                modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Edit, "Edit Nama", tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp))
             }
-
-            // Delete button
-            IconButton(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    Icons.Default.DeleteOutline,
-                    contentDescription = "Hapus",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
+            IconButton(onClick = onToggleRole, modifier = Modifier.size(36.dp)) {
+                Icon(if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.Person,
+                    "Toggle Role", tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp))
+            }
+            IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.DeleteOutline, "Hapus", tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp))
             }
         }
+    }
+
+    if (showEditNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = { Text("Edit Nama", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(value = editNameValue, onValueChange = { editNameValue = it },
+                    label = { Text("Nama Lengkap") }, singleLine = true,
+                    shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+            },
+            confirmButton = {
+                Button(onClick = { if (editNameValue.isNotBlank()) { onEditName(editNameValue.trim()); showEditNameDialog = false } }) { Text("Simpan") }
+            },
+            dismissButton = { TextButton(onClick = { showEditNameDialog = false }) { Text("Batal") } }
+        )
     }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Hapus Akun") },
-            text = { Text("Yakin ingin menghapus akun ${user.name}? Akun tidak dapat dipulihkan.") },
+            text = { Text("Yakin ingin menghapus akun ${user.name}?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Hapus") }
+                TextButton(onClick = { showDeleteDialog = false; onDelete() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Hapus") }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
-            }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") } }
         )
     }
 }

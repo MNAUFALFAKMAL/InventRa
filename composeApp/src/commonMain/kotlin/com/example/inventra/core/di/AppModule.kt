@@ -54,12 +54,11 @@ val preferencesModule = module {
 }
 
 val repositoryModule = module {
-    single<AuthRepository> { AuthRepositoryImpl() }
+    single<AuthRepository> { AuthRepositoryImpl(get()) }
     single<ItemRepository> { ItemRepositoryImpl(get()) }
     single<BorrowRepository> { BorrowRepositoryImpl(get()) }
     singleOf(::AIRepositoryImpl) bind AIRepository::class
 }
-
 val useCaseModule = module {
     singleOf(::GetAllItemsUseCase)
     singleOf(::SearchItemsUseCase)
@@ -69,7 +68,8 @@ val useCaseModule = module {
 
 val viewModelModule = module {
     viewModelOf(::LoginViewModel)
-    viewModelOf(::DashboardViewModel)
+    // DashboardViewModel: pakai single karena koin tidak bisa auto-resolve 2 params berbeda interface
+    single { DashboardViewModel(get(), get()) }
     viewModelOf(::CatalogViewModel)
     viewModelOf(::HistoryViewModel)
     viewModelOf(::AIInventoryViewModel)

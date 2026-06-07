@@ -13,4 +13,8 @@ interface ItemRepository {
     suspend fun updateItem(item: Item)
     suspend fun deleteItem(id: Long)
     suspend fun uploadItemImage(imageBytes: ByteArray, fileName: String): Result<String>
+    /** Paksa sync dari Supabase ke local cache */
+    suspend fun refresh()
+    /** Hapus semua data lokal dan di Supabase — hanya untuk demo reset */
+    suspend fun deleteAll()
 }

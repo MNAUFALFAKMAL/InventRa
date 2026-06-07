@@ -153,4 +153,18 @@ class FakeBorrowRepository : BorrowRepository {
             list.map { if (it.id == recordId) it.copy(status = BorrowStatus.RETURNED) else it }
         }
     }
+
+    override suspend fun approveRequest(recordId: Long) {
+        records.update { list ->
+            list.map { if (it.id == recordId) it.copy(status = BorrowStatus.ACTIVE) else it }
+        }
+    }
+
+    override suspend fun refresh() {
+        // No-op for testing
+    }
+
+    override suspend fun deleteAll() {
+        records.update { emptyList() }
+    }
 }

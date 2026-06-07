@@ -36,8 +36,6 @@ fun ItemDetailScreen(
     var showBorrowDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var borrowerName by remember { mutableStateOf("") }
-    var borrowerDivision by remember { mutableStateOf(UserDivision.PUBDOK) }
-    var showDivisionDropdown by remember { mutableStateOf(false) }
     var borrowError by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     var snackbarMessage by remember { mutableStateOf("") }
@@ -372,8 +370,6 @@ fun ItemDetailScreen(
     }
 
     // ==================== BORROW DIALOG ====================
-    // Di luar Scaffold agar state showBorrowDialog bisa diakses
-    // dari bottomBar dan dialog ini tanpa masalah scope
     if (showBorrowDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -384,56 +380,18 @@ fun ItemDetailScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Permintaan akan diproses oleh Admin (Nabila).",
+                        "Permintaan akan diproses oleh Admin.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
-
                     OutlinedTextField(
                         value = borrowerName,
-                        onValueChange = { borrowerName = it },
+                        onValueChange = { borrowerName = it; borrowError = "" },
                         label = { Text("Nama Peminjam *") },
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    ExposedDropdownMenuBox(
-                        expanded = showDivisionDropdown,
-                        onExpandedChange = { showDivisionDropdown = it }
-                    ) {
-                        OutlinedTextField(
-                            value = borrowerDivision.displayName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Divisi") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(
-                                    expanded = showDivisionDropdown
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = showDivisionDropdown,
-                            onDismissRequest = { showDivisionDropdown = false }
-                        ) {
-                            UserDivision.entries.forEach { division ->
-                                DropdownMenuItem(
-                                    text = { Text(division.displayName) },
-                                    onClick = {
-                                        borrowerDivision = division
-                                        showDivisionDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // Tampilkan error jika ada
                     if (borrowError.isNotBlank()) {
                         Card(
                             colors = CardDefaults.cardColors(
@@ -458,7 +416,7 @@ fun ItemDetailScreen(
                             borrowError = ""
                             viewModel.requestBorrow(
                                 borrowerName = borrowerName,
-                                borrowerDivision = borrowerDivision.displayName,
+                                borrowerDivision = "",   // tidak dipakai lagi
                                 onSuccess = {
                                     showBorrowDialog = false
                                     borrowerName = ""
@@ -466,24 +424,18 @@ fun ItemDetailScreen(
                                     snackbarMessage =
                                         "✅ Permintaan peminjaman terkirim! Tunggu konfirmasi admin."
                                 },
-                                onError = { msg ->
-                                    borrowError = msg
-                                }
+                                onError = { msg -> borrowError = msg }
                             )
                         }
                     },
                     enabled = borrowerName.isNotBlank()
-                ) {
-                    Text("Ajukan")
-                }
+                ) { Text("Ajukan") }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showBorrowDialog = false
                     borrowError = ""
-                }) {
-                    Text("Batal")
-                }
+                }) { Text("Batal") }
             }
         )
     }

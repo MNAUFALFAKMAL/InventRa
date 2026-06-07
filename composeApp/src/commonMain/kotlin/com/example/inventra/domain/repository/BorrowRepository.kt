@@ -9,4 +9,8 @@ interface BorrowRepository {
     suspend fun borrowItem(record: BorrowRecord): Long
     suspend fun returnItem(recordId: Long)
     suspend fun approveRequest(recordId: Long)
+    /** Paksa sync dari Supabase ke local cache */
+    suspend fun refresh()
+    /** Hapus semua data lokal dan di Supabase — hanya untuk demo reset */
+    suspend fun deleteAll()
 }

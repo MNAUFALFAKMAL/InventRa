@@ -1,16 +1,16 @@
 CREATE TABLE ItemEntity (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    name          TEXT    NOT NULL,
-    description   TEXT    NOT NULL DEFAULT '',
-    category      TEXT    NOT NULL DEFAULT 'OTHER',
-    location      TEXT    NOT NULL DEFAULT '',
-    total_stock   INTEGER NOT NULL DEFAULT 1,
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT    NOT NULL,
+    description     TEXT    NOT NULL DEFAULT '',
+    category        TEXT    NOT NULL DEFAULT 'OTHER',
+    location        TEXT    NOT NULL DEFAULT '',
+    total_stock     INTEGER NOT NULL DEFAULT 1,
     available_stock INTEGER NOT NULL DEFAULT 1,
-    condition     TEXT    NOT NULL DEFAULT 'GOOD',
-    pic_name      TEXT    NOT NULL DEFAULT '',
-    image_url     TEXT,
-    created_at    INTEGER NOT NULL,
-    updated_at    INTEGER NOT NULL
+    condition       TEXT    NOT NULL DEFAULT 'GOOD',
+    pic_name        TEXT    NOT NULL DEFAULT '',
+    image_url       TEXT,
+    created_at      INTEGER NOT NULL,
+    updated_at      INTEGER NOT NULL
 );
 
 getAllItems:
@@ -41,6 +41,11 @@ UPDATE ItemEntity
 SET name = ?, description = ?, category = ?, location = ?,
     total_stock = ?, available_stock = ?, condition = ?,
     pic_name = ?, image_url = ?, updated_at = ?
+WHERE id = ?;
+
+updateAvailableStock:
+UPDATE ItemEntity
+SET available_stock = ?, updated_at = ?
 WHERE id = ?;
 
 deleteItem:

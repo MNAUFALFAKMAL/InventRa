@@ -2,21 +2,6 @@ package com.example.inventra.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-@Serializable
-data class ProfileDto(
-    val id: String,
-    val name: String,
-    val role: String = "MEMBER",
-    val division: String = "PUBDOK",
-    @SerialName("student_id") val studentId: String? = null,
-    val phone: String? = null,
-    @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("is_active") val isActive: Boolean = true,
-    @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("updated_at") val updatedAt: String? = null
-)
-
 @Serializable
 data class ItemDto(
     val id: String = "",

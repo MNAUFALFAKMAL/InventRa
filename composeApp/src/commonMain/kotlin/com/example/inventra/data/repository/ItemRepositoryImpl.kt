@@ -32,8 +32,11 @@ class ItemRepositoryImpl(
     private val queries = database.itemQueries
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    private var lastSyncTime = 0L
+    private val SYNC_COOLDOWN_MS = 60_000L
+
     override fun getAllItems(): Flow<List<Item>> {
-        syncScope.launch { syncItemsFromSupabase() }
+        triggerSyncIfStale()
         return queries.getAllItems()
             .asFlow()
             .mapToList(Dispatchers.IO)
@@ -42,69 +45,44 @@ class ItemRepositoryImpl(
     }
 
     override fun getItemsByCategory(category: ItemCategory): Flow<List<Item>> {
-        syncScope.launch { syncItemsFromSupabase() }
+        triggerSyncIfStale()
         return if (category == ItemCategory.ALL) {
-            queries.getAllItems()
-                .asFlow()
-                .mapToList(Dispatchers.IO)
-                .map { entities -> entities.map { it.toDomain() } }
-                .catch { emit(emptyList()) }
+            queries.getAllItems().asFlow().mapToList(Dispatchers.IO)
+                .map { it.map { e -> e.toDomain() } }.catch { emit(emptyList()) }
         } else {
-            queries.getItemsByCategory(category.name)
-                .asFlow()
-                .mapToList(Dispatchers.IO)
-                .map { entities -> entities.map { it.toDomain() } }
-                .catch { emit(emptyList()) }
+            queries.getItemsByCategory(category.name).asFlow().mapToList(Dispatchers.IO)
+                .map { it.map { e -> e.toDomain() } }.catch { emit(emptyList()) }
         }
     }
 
-    override fun searchItems(query: String): Flow<List<Item>> {
-        return queries.searchItems(query, query)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
-            .catch { emit(emptyList()) }
-    }
+    override fun searchItems(query: String): Flow<List<Item>> =
+        queries.searchItems(query, query).asFlow().mapToList(Dispatchers.IO)
+            .map { it.map { e -> e.toDomain() } }.catch { emit(emptyList()) }
 
-    override fun getItemById(id: Long): Flow<Item?> {
-        return queries.getItemById(id)
-            .asFlow()
-            .mapToOneOrNull(Dispatchers.IO)
-            .map { entity -> entity?.toDomain() }
-            .catch { emit(null) }
-    }
+    override fun getItemById(id: Long): Flow<Item?> =
+        queries.getItemById(id).asFlow().mapToOneOrNull(Dispatchers.IO)
+            .map { it?.toDomain() }.catch { emit(null) }
 
     override suspend fun insertItem(item: Item): Long {
         val now = Clock.System.now().toEpochMilliseconds()
         queries.insertItem(
-            name = item.name,
-            description = item.description,
-            category = item.category.name,
-            location = item.location,
+            name = item.name, description = item.description,
+            category = item.category.name, location = item.location,
             total_stock = item.totalStock.toLong(),
             available_stock = item.availableStock.toLong(),
-            condition = item.condition.name,
-            pic_name = item.picName,
-            image_url = item.imageUrl,
-            created_at = now,
-            updated_at = now
+            condition = item.condition.name, pic_name = item.picName,
+            image_url = item.imageUrl, created_at = now, updated_at = now
         )
         val localId = queries.lastInsertId().executeAsOne()
         syncScope.launch {
             try {
-                db["items"].insert(
-                    InsertItemDto(
-                        name = item.name,
-                        description = item.description,
-                        category = item.category.name,
-                        location = item.location,
-                        totalStock = item.totalStock,
-                        availableStock = item.availableStock,
-                        condition = item.condition.name,
-                        picName = item.picName,
-                        imageUrl = item.imageUrl
-                    )
-                )
+                db["items"].insert(InsertItemDto(
+                    name = item.name, description = item.description,
+                    category = item.category.name, location = item.location,
+                    totalStock = item.totalStock, availableStock = item.availableStock,
+                    condition = item.condition.name, picName = item.picName,
+                    imageUrl = item.imageUrl
+                ))
             } catch (e: Exception) {
                 println("Supabase insert gagal: ${e.message}")
             }
@@ -115,33 +93,23 @@ class ItemRepositoryImpl(
     override suspend fun updateItem(item: Item) {
         val now = Clock.System.now().toEpochMilliseconds()
         queries.updateItem(
-            name = item.name,
-            description = item.description,
-            category = item.category.name,
-            location = item.location,
+            name = item.name, description = item.description,
+            category = item.category.name, location = item.location,
             total_stock = item.totalStock.toLong(),
             available_stock = item.availableStock.toLong(),
-            condition = item.condition.name,
-            pic_name = item.picName,
-            image_url = item.imageUrl,
-            updated_at = now,
-            id = item.id
+            condition = item.condition.name, pic_name = item.picName,
+            image_url = item.imageUrl, updated_at = now, id = item.id
         )
         syncScope.launch {
             try {
-                db["items"].update(
-                    mapOf(
-                        "name" to item.name,
-                        "description" to item.description,
-                        "category" to item.category.name,
-                        "location" to item.location,
-                        "total_stock" to item.totalStock,
-                        "available_stock" to item.availableStock,
-                        "condition" to item.condition.name,
-                        "pic_name" to item.picName,
-                        "image_url" to item.imageUrl
-                    )
-                ) { filter { eq("id", item.id.toString()) } }
+                db["items"].update(mapOf(
+                    "name" to item.name, "description" to item.description,
+                    "category" to item.category.name, "location" to item.location,
+                    "total_stock" to item.totalStock,
+                    "available_stock" to item.availableStock,
+                    "condition" to item.condition.name,
+                    "pic_name" to item.picName, "image_url" to item.imageUrl
+                )) { filter { eq("id", item.id.toString()) } }
             } catch (e: Exception) {
                 println("Supabase update gagal: ${e.message}")
             }
@@ -152,9 +120,7 @@ class ItemRepositoryImpl(
         queries.deleteItem(id)
         syncScope.launch {
             try {
-                db["items"].delete {
-                    filter { eq("id", id.toString()) }
-                }
+                db["items"].delete { filter { eq("id", id.toString()) } }
             } catch (e: Exception) {
                 println("Supabase delete gagal: ${e.message}")
             }
@@ -163,12 +129,36 @@ class ItemRepositoryImpl(
 
     override suspend fun uploadItemImage(imageBytes: ByteArray, fileName: String): Result<String> {
         return try {
-            val bucket = storageClient["item-images"]
+            val bucket = storageClient["items"]
             val path = "items/$fileName"
             bucket.upload(path, imageBytes) { upsert = true }
             Result.success(bucket.publicUrl(path))
         } catch (e: Exception) {
             Result.failure(Exception("Gagal upload foto: ${e.message}"))
+        }
+    }
+
+    override suspend fun refresh() {
+        syncItemsFromSupabase()
+        lastSyncTime = Clock.System.now().toEpochMilliseconds()
+    }
+
+    override suspend fun deleteAll() {
+        queries.deleteAll()
+        try {
+            db["items"].delete()
+        } catch (e: Exception) {
+            println("Supabase deleteAll gagal: ${e.message}")
+        }
+    }
+
+    private fun triggerSyncIfStale() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        if (now - lastSyncTime > SYNC_COOLDOWN_MS) {
+            syncScope.launch {
+                syncItemsFromSupabase()
+                lastSyncTime = Clock.System.now().toEpochMilliseconds()
+            }
         }
     }
 
@@ -179,26 +169,22 @@ class ItemRepositoryImpl(
                 .decodeList<ItemDto>()
             database.transaction {
                 queries.deleteAll()
+                val now = Clock.System.now().toEpochMilliseconds()
                 remoteItems.forEach { dto ->
-                    val now = Clock.System.now().toEpochMilliseconds()
                     queries.insertItem(
-                        name = dto.name,
-                        description = dto.description,
-                        category = dto.category,
-                        location = dto.location,
+                        name = dto.name, description = dto.description,
+                        category = dto.category, location = dto.location,
                         total_stock = dto.totalStock.toLong(),
                         available_stock = dto.availableStock.toLong(),
-                        condition = dto.condition,
-                        pic_name = dto.picName,
+                        condition = dto.condition, pic_name = dto.picName,
                         image_url = dto.imageUrl,
-                        created_at = now,
-                        updated_at = now
+                        created_at = now, updated_at = now
                     )
                 }
             }
-            println("SYNC: ${remoteItems.size} items synced")
+            println("SYNC ITEMS: ${remoteItems.size} items")
         } catch (e: Exception) {
-            println("SYNC offline: ${e.message}")
+            println("SYNC ITEMS offline: ${e.message}")
         }
     }
 }

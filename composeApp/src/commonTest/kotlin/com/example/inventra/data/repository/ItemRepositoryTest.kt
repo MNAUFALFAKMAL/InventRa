@@ -154,4 +154,16 @@ class FakeItemRepository : ItemRepository {
     override suspend fun deleteItem(id: Long) {
         items.update { list -> list.filter { it.id != id } }
     }
+
+    override suspend fun uploadItemImage(imageBytes: ByteArray, fileName: String): Result<String> {
+        return Result.success("https://fake-url.com/$fileName")
+    }
+
+    override suspend fun refresh() {
+        // No-op for fake
+    }
+
+    override suspend fun deleteAll() {
+        items.update { emptyList() }
+    }
 }

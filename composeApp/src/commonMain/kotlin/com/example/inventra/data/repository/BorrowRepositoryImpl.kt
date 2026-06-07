@@ -33,11 +33,19 @@ class BorrowRepositoryImpl(
     private val db = client.postgrest
     private val auth = client.auth
     private val queries = database.borrowRecordQueries
-    private val finePerDay = 10_000L
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    private var lastSyncTime = 0L
+    private val SYNC_COOLDOWN_MS = 60_000L
+
     override fun getAllRecords(): Flow<List<BorrowRecord>> {
-        syncScope.launch { syncRecordsFromSupabase() }
+        val now = Clock.System.now().toEpochMilliseconds()
+        if (now - lastSyncTime > SYNC_COOLDOWN_MS) {
+            syncScope.launch {
+                syncRecordsFromSupabase()
+                lastSyncTime = Clock.System.now().toEpochMilliseconds()
+            }
+        }
         return queries.getAllRecords()
             .asFlow()
             .mapToList(Dispatchers.IO)
@@ -46,7 +54,6 @@ class BorrowRepositoryImpl(
     }
 
     override fun getActiveRecords(): Flow<List<BorrowRecord>> {
-        syncScope.launch { syncRecordsFromSupabase() }
         return queries.getActiveRecords()
             .asFlow()
             .mapToList(Dispatchers.IO)
@@ -55,9 +62,9 @@ class BorrowRepositoryImpl(
     }
 
     override suspend fun borrowItem(record: BorrowRecord): Long {
-        println("DEBUG BorrowRepository.borrowItem called: ${record.itemName}, itemId=${record.itemId}")
+        println("DEBUG BorrowRepository.borrowItem: ${record.itemName}, itemId=${record.itemId}")
 
-        // Simpan ke SQLDelight lokal dengan status PENDING
+        // 1. Insert borrow record lokal
         queries.insertRecord(
             item_id = record.itemId,
             item_name = record.itemName,
@@ -69,39 +76,28 @@ class BorrowRepositoryImpl(
             fine_amount = 0L
         )
         val localId = queries.lastInsertId().executeAsOne()
-        println("DEBUG borrow record inserted locally, localId=$localId")
 
-        // Kurangi available_stock di SQLDelight lokal
+        // 2. Kurangi available_stock SEGERA
+        val now = Clock.System.now().toEpochMilliseconds()
         try {
-            val existingItem = database.itemQueries
-                .getItemById(record.itemId)
-                .executeAsOneOrNull()
-            println("DEBUG existingItem: name=${existingItem?.name}, available_stock=${existingItem?.available_stock}")
-
+            val existingItem = database.itemQueries.getItemById(record.itemId).executeAsOneOrNull()
             if (existingItem != null && existingItem.available_stock > 0) {
-                database.itemQueries.updateItem(
-                    name = existingItem.name,
-                    description = existingItem.description,
-                    category = existingItem.category,
-                    location = existingItem.location,
-                    total_stock = existingItem.total_stock,
-                    available_stock = existingItem.available_stock - 1,
-                    condition = existingItem.condition,
-                    pic_name = existingItem.pic_name,
-                    image_url = existingItem.image_url,
-                    updated_at = Clock.System.now().toEpochMilliseconds(),
+                val newStock = existingItem.available_stock - 1
+                database.itemQueries.updateAvailableStock(
+                    available_stock = newStock,
+                    updated_at = now,
                     id = record.itemId
                 )
-                println("DEBUG stok lokal dikurangi: ${existingItem.available_stock} -> ${existingItem.available_stock - 1}")
-            } else {
-                println("DEBUG item tidak ditemukan di SQLDelight atau stok sudah 0")
+                println("BORROW: stok lokal ${existingItem.available_stock} → $newStock")
             }
         } catch (e: Exception) {
-            println("DEBUG update stok lokal gagal: ${e.message}")
-            // Lanjutkan — borrow record sudah tersimpan
+            println("BORROW: update stok lokal gagal: ${e.message}")
         }
 
-        // Sync ke Supabase di background
+        // 3. Reset cooldown agar sync tidak menimpa stok yang baru dikurangi
+        lastSyncTime = now + SYNC_COOLDOWN_MS
+
+        // 4. Sync ke Supabase di background
         syncScope.launch {
             try {
                 val userId = auth.currentUserOrNull()?.id ?: "anonymous"
@@ -116,23 +112,18 @@ class BorrowRepositoryImpl(
                     status = BorrowStatus.PENDING.name
                 )
                 db["borrow_records"].insert(dto)
-                println("DEBUG borrow synced to Supabase")
 
                 // Update available_stock di Supabase
                 val currentRemote = db["items"]
                     .select { filter { eq("id", record.itemId.toString()) } }
                     .decodeSingleOrNull<ItemDto>()
-
                 if (currentRemote != null && currentRemote.availableStock > 0) {
                     db["items"].update(
                         mapOf("available_stock" to currentRemote.availableStock - 1)
                     ) { filter { eq("id", record.itemId.toString()) } }
-                    println("DEBUG Supabase stock updated: ${currentRemote.availableStock} -> ${currentRemote.availableStock - 1}")
-                } else {
-                    println("DEBUG item tidak ditemukan di Supabase atau stok remote 0")
                 }
             } catch (e: Exception) {
-                println("DEBUG Borrow Supabase sync gagal: ${e.message}")
+                println("BORROW Supabase sync gagal: ${e.message}")
             }
         }
 
@@ -148,7 +139,7 @@ class BorrowRepositoryImpl(
         val fineAmount = if (returnDate > dueDate) {
             val diffMs = returnDate.toEpochMilliseconds() - dueDate.toEpochMilliseconds()
             val diffDays = (diffMs / (1000 * 60 * 60 * 24)).coerceAtLeast(1)
-            diffDays * finePerDay
+            diffDays * 10_000L
         } else 0L
 
         queries.updateRecordStatus(
@@ -158,68 +149,66 @@ class BorrowRepositoryImpl(
             id = recordId
         )
 
-        // Kembalikan available_stock di SQLDelight
+        // Kembalikan stok lokal
         try {
-            val existingItem = database.itemQueries
-                .getItemById(record.item_id)
-                .executeAsOneOrNull()
-
+            val existingItem = database.itemQueries.getItemById(record.item_id).executeAsOneOrNull()
             if (existingItem != null) {
-                val newAvailable = (existingItem.available_stock + 1)
-                    .coerceAtMost(existingItem.total_stock)
-                database.itemQueries.updateItem(
-                    name = existingItem.name,
-                    description = existingItem.description,
-                    category = existingItem.category,
-                    location = existingItem.location,
-                    total_stock = existingItem.total_stock,
-                    available_stock = newAvailable,
-                    condition = existingItem.condition,
-                    pic_name = existingItem.pic_name,
-                    image_url = existingItem.image_url,
+                val newStock = (existingItem.available_stock + 1).coerceAtMost(existingItem.total_stock)
+                database.itemQueries.updateAvailableStock(
+                    available_stock = newStock,
                     updated_at = Clock.System.now().toEpochMilliseconds(),
                     id = record.item_id
                 )
-
-                // Sync return ke Supabase
-                syncScope.launch {
-                    try {
-                        db["borrow_records"].update(
-                            mapOf(
-                                "status" to BorrowStatus.RETURNED.name,
-                                "fine_amount" to fineAmount,
-                                "return_date" to returnDate.toString()
-                            )
-                        ) { filter { eq("id", recordId.toString()) } }
-
-                        db["items"].update(
-                            mapOf("available_stock" to newAvailable)
-                        ) { filter { eq("id", record.item_id.toString()) } }
-                    } catch (e: Exception) {
-                        println("DEBUG Return Supabase sync gagal: ${e.message}")
-                    }
-                }
             }
         } catch (e: Exception) {
-            println("DEBUG return stok update gagal: ${e.message}")
+            println("RETURN: update stok gagal: ${e.message}")
+        }
+
+        // Reset cooldown
+        lastSyncTime = Clock.System.now().toEpochMilliseconds() + SYNC_COOLDOWN_MS
+
+        syncScope.launch {
+            try {
+                db["borrow_records"].update(
+                    mapOf(
+                        "status" to BorrowStatus.RETURNED.name,
+                        "fine_amount" to fineAmount,
+                        "return_date" to returnDate.toString()
+                    )
+                ) { filter { eq("id", recordId.toString()) } }
+            } catch (e: Exception) {
+                println("RETURN Supabase sync gagal: ${e.message}")
+            }
         }
     }
 
     override suspend fun approveRequest(recordId: Long) {
-        queries.updateRecordStatus(
-            status = BorrowStatus.ACTIVE.name,
-            return_date = null,
-            fine_amount = 0L,
-            id = recordId
-        )
+        queries.updateStatus(status = BorrowStatus.ACTIVE.name, id = recordId)
         syncScope.launch {
             try {
                 db["borrow_records"].update(
                     mapOf("status" to BorrowStatus.ACTIVE.name)
                 ) { filter { eq("id", recordId.toString()) } }
             } catch (e: Exception) {
-                println("DEBUG Approve sync gagal: ${e.message}")
+                println("APPROVE Supabase sync gagal: ${e.message}")
             }
+        }
+    }
+
+    override suspend fun refresh() {
+        syncRecordsFromSupabase()
+        lastSyncTime = Clock.System.now().toEpochMilliseconds()
+    }
+
+    override suspend fun deleteAll() {
+        queries.deleteAll()
+        try {
+            // Hapus di Supabase (untuk demo reset)
+            db["borrow_records"].delete {
+                filter { neq("id", "0") } // Trick agar menghapus semua
+            }
+        } catch (e: Exception) {
+            println("DELETE ALL Supabase gagal: ${e.message}")
         }
     }
 
@@ -243,18 +232,16 @@ class BorrowRepositoryImpl(
                             Instant.parse(dto.dueDate).toEpochMilliseconds()
                         }.getOrDefault(Clock.System.now().toEpochMilliseconds()),
                         return_date = dto.returnDate?.let {
-                            runCatching {
-                                Instant.parse(it).toEpochMilliseconds()
-                            }.getOrNull()
+                            runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull()
                         },
                         status = dto.status,
                         fine_amount = dto.fineAmount
                     )
                 }
             }
-            println("SYNC: ${records.size} borrow records synced")
+            println("SYNC BORROW: ${records.size} records")
         } catch (e: Exception) {
-            println("SYNC borrow offline: ${e.message}")
+            println("SYNC BORROW offline: ${e.message}")
         }
     }
 }

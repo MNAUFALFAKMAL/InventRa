@@ -1,5 +1,6 @@
 package com.example.inventra.data.repository
 
+import com.example.inventra.core.network.ApiConfig
 import com.example.inventra.core.network.SupabaseClientProvider
 import com.example.inventra.data.remote.dto.ProfileDto
 import com.example.inventra.domain.model.User
@@ -11,35 +12,46 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.storage
+import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.content.TextContent
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
-class AuthRepositoryImpl : AuthRepository {
+class AuthRepositoryImpl(
+    private val httpClient: HttpClient
+) : AuthRepository {
 
     private val client = SupabaseClientProvider.client
+    private val adminClient = SupabaseClientProvider.adminClient
     private val auth = client.auth
     private val db = client.postgrest
+    private val adminDb = adminClient.postgrest
+    private val json = Json { ignoreUnknownKeys = true }
 
-    override val currentUser: Flow<User?> = flow {
-        emit(getCurrentUser())
-    }
+    override val currentUser: Flow<User?> = flow { emit(getCurrentUser()) }
 
     override val isLoggedIn: Boolean
         get() = auth.currentSessionOrNull() != null
 
     override suspend fun login(email: String, password: String): Result<User> {
         return try {
-            auth.signInWith(Email) {
-                this.email = email
-                this.password = password
-            }
-            val user = getCurrentUser()
-                ?: return Result.failure(Exception("Gagal mengambil data user"))
+            auth.signInWith(Email) { this.email = email; this.password = password }
+            val user = getCurrentUserOrCreate()
+                ?: return Result.failure(
+                    Exception("Gagal mengambil data user. Jalankan SQL fix di Supabase SQL Editor.")
+                )
             Result.success(user)
         } catch (e: Exception) {
-            println("LOGIN ERROR: ${e.message}")
             Result.failure(Exception(parseAuthError(e.message)))
         }
     }
@@ -52,58 +64,70 @@ class AuthRepositoryImpl : AuthRepository {
         role: String
     ): Result<User> {
         return try {
-            // Step 1: Daftarkan user ke Supabase Auth
-            auth.signUpWith(Email) {
-                this.email = email
-                this.password = password
-                data = buildJsonObject {
-                    put("name", name)
-                    put("role", role)
-                    put("division", division)
+            val bodyJson = """
+                {
+                  "email": "${email.trim()}",
+                  "password": "$password",
+                  "email_confirm": true,
+                  "user_metadata": {
+                    "name": "$name",
+                    "division": "$division",
+                    "role": "$role"
+                  }
                 }
+            """.trimIndent()
+
+            val response = httpClient.post("${ApiConfig.supabaseUrl}/auth/v1/admin/users") {
+                header("apikey", ApiConfig.supabaseServiceRoleKey)
+                header("Authorization", "Bearer ${ApiConfig.supabaseServiceRoleKey}")
+                setBody(TextContent(bodyJson, ContentType.Application.Json))
             }
 
-            // Step 2: Tunggu sebentar agar trigger sempat berjalan
-            kotlinx.coroutines.delay(500)
+            val responseText = response.bodyAsText()
+            println("REGISTER response ${response.status}: $responseText")
 
-            // Step 3: Coba ambil user yang baru dibuat
-            val authUser = auth.currentUserOrNull()
+            if (!response.status.isSuccess()) {
+                val serverMsg = runCatching {
+                    json.parseToJsonElement(responseText)
+                        .jsonObject["msg"]?.jsonPrimitive?.content
+                        ?: json.parseToJsonElement(responseText)
+                            .jsonObject["message"]?.jsonPrimitive?.content
+                }.getOrNull() ?: "HTTP ${response.status.value}"
+                return Result.failure(Exception(parseAuthError(serverMsg)))
+            }
 
-            // Step 4: Jika trigger belum jalan, insert manual ke profiles
-            if (authUser != null) {
-                try {
-                    val existingProfile = db["profiles"]
-                        .select { filter { eq("id", authUser.id) } }
-                        .decodeSingleOrNull<ProfileDto>()
+            val newUserId = runCatching {
+                json.parseToJsonElement(responseText)
+                    .jsonObject["id"]?.jsonPrimitive?.content
+            }.getOrNull()
+                ?: return Result.failure(Exception("Gagal mendapat user ID dari respons"))
 
-                    if (existingProfile == null) {
-                        // Trigger belum jalan, insert manual
-                        db["profiles"].insert(
-                            mapOf(
-                                "id" to authUser.id,
-                                "name" to name,
-                                "role" to role,
-                                "division" to division
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    println("Profile insert manual: ${e.message}")
-                    // Tidak masalah jika gagal — trigger mungkin sudah jalan
-                }
+            println("REGISTER: user created id=$newUserId")
+
+            kotlinx.coroutines.delay(700)
+
+            try {
+                adminDb["profiles"].upsert(
+                    mapOf(
+                        "id" to newUserId,
+                        "name" to name,
+                        "role" to role,
+                        "division" to division,
+                        "is_active" to true
+                    )
+                )
+                println("REGISTER: profile upserted")
+            } catch (e: Exception) {
+                println("REGISTER profile upsert note: ${e.message}")
             }
 
             Result.success(
                 User(
-                    id = authUser?.id ?: "",
-                    name = name,
-                    email = email,
+                    id = newUserId, name = name, email = email.trim(),
                     role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
                     division = try {
                         UserDivision.valueOf(division)
-                    } catch (e: Exception) {
-                        UserDivision.PUBDOK
-                    }
+                    } catch (e: Exception) { UserDivision.PUBDOK }
                 )
             )
         } catch (e: Exception) {
@@ -112,55 +136,109 @@ class AuthRepositoryImpl : AuthRepository {
         }
     }
 
-    override suspend fun logout(): Result<Unit> {
-        return try {
-            auth.signOut()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun logout(): Result<Unit> = try {
+        auth.signOut(); Result.success(Unit)
+    } catch (e: Exception) { Result.failure(e) }
 
     override suspend fun getCurrentUser(): User? {
         return try {
             val authUser = auth.currentUserOrNull() ?: return null
-            val profile = db["profiles"]
+            db["profiles"]
                 .select(columns = Columns.ALL) {
                     filter { eq("id", authUser.id) }
                     limit(1)
-                }
-                .decodeSingleOrNull<ProfileDto>() ?: return null
-            User(
-                id = profile.id,
-                name = profile.name,
-                email = authUser.email ?: "",
-                role = try { UserRole.valueOf(profile.role) } catch (e: Exception) { UserRole.MEMBER },
-                division = try { UserDivision.valueOf(profile.division) } catch (e: Exception) { UserDivision.PUBDOK },
-                studentId = profile.studentId,
-                phone = profile.phone,
-                avatarUrl = profile.avatarUrl,
-                isActive = profile.isActive
+                }.decodeSingleOrNull<ProfileDto>()
+                ?.toUser(authUser.email ?: "")
+        } catch (e: Exception) {
+            println("GET USER ERROR: ${e.message}"); null
+        }
+    }
+
+    private suspend fun getCurrentUserOrCreate(): User? {
+        return try {
+            val authUser = auth.currentUserOrNull() ?: return null
+
+            // Coba baca profile
+            val existingProfile = try {
+                db["profiles"]
+                    .select(columns = Columns.ALL) {
+                        filter { eq("id", authUser.id) }
+                        limit(1)
+                    }.decodeSingleOrNull<ProfileDto>()
+            } catch (e: Exception) {
+                println("Profile query error: ${e.message}"); null
+            }
+
+            if (existingProfile != null) {
+                return existingProfile.toUser(authUser.email ?: "")
+            }
+
+            // Profile tidak ada → buat otomatis
+            println("LOGIN: profile tidak ada untuk ${authUser.email}, membuat otomatis...")
+
+            val emailStr = authUser.email ?: ""
+            val defaultName = emailStr.substringBefore("@")
+                .replace(".", " ")
+                .split(" ")
+                .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+                .ifBlank { "User" }
+
+            val isAdminEmail = emailStr.contains("admin")
+            val defaultRole = if (isAdminEmail) "ADMIN" else "MEMBER"
+            val defaultDivision = if (isAdminEmail) "BENDAHARA_UMUM" else "PUBDOK"
+
+            try {
+                adminDb["profiles"].upsert(
+                    mapOf(
+                        "id" to authUser.id,
+                        "name" to defaultName,
+                        "role" to defaultRole,
+                        "division" to defaultDivision,
+                        "is_active" to true
+                    )
+                )
+                println("LOGIN: profile berhasil dibuat: $defaultName / $defaultRole / $defaultDivision")
+            } catch (e: Exception) {
+                println("LOGIN: gagal buat profile: ${e.message}")
+            }
+
+            // Baca ulang atau kembalikan fallback
+            val newProfile = try {
+                db["profiles"]
+                    .select(columns = Columns.ALL) {
+                        filter { eq("id", authUser.id) }
+                        limit(1)
+                    }.decodeSingleOrNull<ProfileDto>()
+            } catch (e: Exception) { null }
+
+            newProfile?.toUser(emailStr) ?: User(
+                id = authUser.id,
+                name = defaultName,
+                email = emailStr,
+                role = try { UserRole.valueOf(defaultRole) } catch (e: Exception) { UserRole.MEMBER },
+                division = try {
+                    UserDivision.valueOf(defaultDivision)
+                } catch (e: Exception) { UserDivision.PUBDOK }
             )
         } catch (e: Exception) {
+            println("getCurrentUserOrCreate ERROR: ${e.message}")
             null
         }
     }
 
-    override suspend fun updateProfile(name: String, phone: String?, avatarUrl: String?): Result<User> {
+    override suspend fun updateProfile(
+        name: String, phone: String?, avatarUrl: String?
+    ): Result<User> {
         return try {
             val userId = auth.currentUserOrNull()?.id
                 ?: return Result.failure(Exception("Tidak terautentikasi"))
-            val updateMap = mutableMapOf<String, Any?>("name" to name, "phone" to phone)
-            if (avatarUrl != null) updateMap["avatar_url"] = avatarUrl
-            db["profiles"].update(updateMap) {
-                filter { eq("id", userId) }
-            }
+            val update = mutableMapOf<String, Any?>("name" to name, "phone" to phone)
+            if (avatarUrl != null) update["avatar_url"] = avatarUrl
+            db["profiles"].update(update) { filter { eq("id", userId) } }
             val user = getCurrentUser()
-                ?: return Result.failure(Exception("Gagal mengambil data"))
+                ?: return Result.failure(Exception("Gagal ambil data"))
             Result.success(user)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun updateAvatar(imageBytes: ByteArray, fileName: String): Result<String> {
@@ -169,13 +247,10 @@ class AuthRepositoryImpl : AuthRepository {
                 ?: return Result.failure(Exception("Tidak terautentikasi"))
             val bucket = client.storage["avatars"]
             val path = "$userId/$fileName"
-            // Gunakan UploadData untuk kompatibilitas Supabase Kotlin SDK
             bucket.upload(path, imageBytes) { upsert = true }
-            val publicUrl = bucket.publicUrl(path)
-            db["profiles"].update(mapOf("avatar_url" to publicUrl)) {
-                filter { eq("id", userId) }
-            }
-            Result.success(publicUrl)
+            val url = bucket.publicUrl(path)
+            db["profiles"].update(mapOf("avatar_url" to url)) { filter { eq("id", userId) } }
+            Result.success(url)
         } catch (e: Exception) {
             Result.failure(Exception("Gagal upload foto: ${e.message}"))
         }
@@ -183,58 +258,61 @@ class AuthRepositoryImpl : AuthRepository {
 
     override suspend fun getAllUsers(): Result<List<User>> {
         return try {
-            val profiles = db["profiles"]
-                .select(columns = Columns.ALL)
-                .decodeList<ProfileDto>()
-            val users = profiles.map { profile ->
-                User(
-                    id = profile.id,
-                    name = profile.name,
-                    email = "",
-                    role = try { UserRole.valueOf(profile.role) } catch (e: Exception) { UserRole.MEMBER },
-                    division = try { UserDivision.valueOf(profile.division) } catch (e: Exception) { UserDivision.PUBDOK },
-                    studentId = profile.studentId,
-                    phone = profile.phone,
-                    avatarUrl = profile.avatarUrl,
-                    isActive = profile.isActive
-                )
-            }
-            Result.success(users)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+            val profiles = db["profiles"].select(columns = Columns.ALL).decodeList<ProfileDto>()
+            Result.success(profiles.map { it.toUser("") })
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun deleteUser(userId: String): Result<Unit> {
         return try {
-            db["profiles"].delete {
-                filter { eq("id", userId) }
+            adminDb["profiles"].delete { filter { eq("id", userId) } }
+            try {
+                httpClient.delete("${ApiConfig.supabaseUrl}/auth/v1/admin/users/$userId") {
+                    header("apikey", ApiConfig.supabaseServiceRoleKey)
+                    header("Authorization", "Bearer ${ApiConfig.supabaseServiceRoleKey}")
+                }
+            } catch (e: Exception) {
+                println("Delete auth user note: ${e.message}")
             }
             Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun updateUserRole(userId: String, role: String): Result<Unit> {
         return try {
-            db["profiles"].update(mapOf("role" to role)) {
-                filter { eq("id", userId) }
-            }
+            db["profiles"].update(mapOf("role" to role)) { filter { eq("id", userId) } }
             Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        } catch (e: Exception) { Result.failure(e) }
     }
 
-    private fun parseAuthError(message: String?): String {
-        return when {
-            message == null -> "Terjadi kesalahan"
-            message.contains("Invalid login credentials") -> "Email atau password salah"
-            message.contains("Email not confirmed") -> "Email belum dikonfirmasi"
-            message.contains("User already registered") -> "Email sudah terdaftar"
-            message.contains("Password should be") -> "Password minimal 6 karakter"
-            else -> message
-        }
+    override suspend fun updateUserName(userId: String, name: String): Result<Unit> {
+        return try {
+            adminDb["profiles"].update(mapOf("name" to name)) { filter { eq("id", userId) } }
+            Result.success(Unit)
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    private fun ProfileDto.toUser(email: String) = User(
+        id = id, name = name, email = email,
+        role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
+        division = try {
+            UserDivision.valueOf(division)
+        } catch (e: Exception) { UserDivision.PUBDOK },
+        studentId = studentId, phone = phone, avatarUrl = avatarUrl, isActive = isActive
+    )
+
+    private fun parseAuthError(message: String?): String = when {
+        message == null -> "Terjadi kesalahan"
+        message.contains("Invalid login credentials") -> "Email atau password salah"
+        message.contains("Email not confirmed") -> "Email belum dikonfirmasi"
+        message.contains("User already registered") ||
+                message.contains("already been registered") ||
+                message.contains("already registered") -> "Email sudah terdaftar"
+        message.contains("Password should be") -> "Password minimal 6 karakter"
+        message.contains("service_role") ||
+                message.contains("401") -> "Service role key tidak valid"
+        message.contains("Database error") ||
+                message.contains("500") -> "Database error — jalankan SQL fix di Supabase SQL Editor"
+        else -> message
     }
 }

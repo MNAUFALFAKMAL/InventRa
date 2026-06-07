@@ -132,6 +132,7 @@ android {
         // Backend API keys
         buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL", "")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\"")
+        buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"${localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")}\"")
     }
     
     packaging {

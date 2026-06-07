@@ -22,4 +22,7 @@ interface AuthRepository {
     suspend fun getAllUsers(): Result<List<User>>
     suspend fun deleteUser(userId: String): Result<Unit>
     suspend fun updateUserRole(userId: String, role: String): Result<Unit>
+
+    /** Admin: edit nama user lain untuk pengelolaan divisi */
+    suspend fun updateUserName(userId: String, name: String): Result<Unit>
 }
