@@ -108,20 +108,34 @@ kotlin {
             implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native.driver)
         }
+
+        val androidInstrumentedTest by getting {
+            dependencies {
+                implementation(compose.uiTest)
+                implementation(compose.uiTestJUnit4)
+            }
+        }
     }
 }
 
 android {
     namespace = "com.example.inventra"
     compileSdk = 35
-    
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.inventra"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Inject API key from local.properties
         buildConfigField(
             "String",
