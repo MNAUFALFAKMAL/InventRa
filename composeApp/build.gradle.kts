@@ -92,7 +92,6 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
-            debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.6")
         }
 
         iosMain.dependencies {
@@ -108,6 +107,10 @@ kotlin {
             }
         }
     }
+}
+
+dependencies {
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 android {

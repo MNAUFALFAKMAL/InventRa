@@ -12,9 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 
 @Composable
 fun ItemCard(
@@ -25,7 +27,8 @@ fun ItemCard(
     isAvailable: Boolean,
     onClick: () -> Unit,
     onBorrowClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    imageUrl: String? = null
 ) {
     // FIX: clickable di level Card terluar agar seluruh area bisa di-tap
     GlassCard(
@@ -40,12 +43,28 @@ fun ItemCard(
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
                     .background(Color.LightGray, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.TopEnd
+                contentAlignment = Alignment.Center
             ) {
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Error, // Atau placeholder lain
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(percent = 50),
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp).align(Alignment.TopEnd)
                 ) {
                     Text(
                         text = category,

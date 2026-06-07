@@ -7,6 +7,7 @@ data class BorrowRecord(
     val itemId: Long,
     val itemName: String,
     val borrowerName: String,
+    val borrowerDivision: String = "",
     val borrowDate: Instant,
     val dueDate: Instant,
     val returnDate: Instant? = null,

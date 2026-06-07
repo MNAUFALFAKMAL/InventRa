@@ -1,13 +1,14 @@
 CREATE TABLE BorrowRecordEntity (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_id       INTEGER NOT NULL,
-    item_name     TEXT    NOT NULL,
-    borrower_name TEXT    NOT NULL,
-    borrow_date   INTEGER NOT NULL,
-    due_date      INTEGER NOT NULL,
-    return_date   INTEGER,
-    status        TEXT    NOT NULL DEFAULT 'ACTIVE',
-    fine_amount   INTEGER NOT NULL DEFAULT 0
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id           INTEGER NOT NULL,
+    item_name         TEXT    NOT NULL,
+    borrower_name     TEXT    NOT NULL,
+    borrower_division TEXT    NOT NULL DEFAULT '',
+    borrow_date       INTEGER NOT NULL,
+    due_date          INTEGER NOT NULL,
+    return_date       INTEGER,
+    status            TEXT    NOT NULL DEFAULT 'ACTIVE',
+    fine_amount       INTEGER NOT NULL DEFAULT 0
 );
 
 getAllRecords:
@@ -26,8 +27,8 @@ SELECT * FROM BorrowRecordEntity WHERE id = ?;
 
 insertRecord:
 INSERT INTO BorrowRecordEntity
-    (item_id, item_name, borrower_name, borrow_date, due_date, return_date, status, fine_amount)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    (item_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();

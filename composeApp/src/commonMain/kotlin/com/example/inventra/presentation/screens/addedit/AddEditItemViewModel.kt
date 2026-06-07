@@ -52,7 +52,8 @@ class AddEditItemViewModel(
                                 totalStock = it.totalStock.toString(),
                                 availableStock = it.availableStock.toString(),
                                 condition = it.condition,
-                                picName = it.picName
+                                picName = it.picName,
+                                imageUrl = it.imageUrl ?: ""
                             )
                         }
                     }
@@ -90,7 +91,8 @@ class AddEditItemViewModel(
                 totalStock = state.totalStock.toIntOrNull() ?: 1,
                 availableStock = state.availableStock.toIntOrNull() ?: 1,
                 condition = state.condition,
-                picName = state.picName
+                picName = state.picName,
+                imageUrl = state.imageUrl.ifBlank { null }
             )
 
             saveItemUseCase(item)

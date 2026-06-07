@@ -21,6 +21,9 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
@@ -232,9 +235,14 @@ class AuthRepositoryImpl(
         return try {
             val userId = auth.currentUserOrNull()?.id
                 ?: return Result.failure(Exception("Tidak terautentikasi"))
-            val update = mutableMapOf<String, Any?>("name" to name, "phone" to phone)
-            if (avatarUrl != null) update["avatar_url"] = avatarUrl
-            db["profiles"].update(update) { filter { eq("id", userId) } }
+
+            val updateData = buildJsonObject {
+                put("name", name)
+                if (phone != null) put("phone", phone)
+                if (avatarUrl != null) put("avatar_url", avatarUrl)
+            }
+
+            db["profiles"].update(updateData) { filter { eq("id", userId) } }
             val user = getCurrentUser()
                 ?: return Result.failure(Exception("Gagal ambil data"))
             Result.success(user)
@@ -249,7 +257,11 @@ class AuthRepositoryImpl(
             val path = "$userId/$fileName"
             bucket.upload(path, imageBytes) { upsert = true }
             val url = bucket.publicUrl(path)
-            db["profiles"].update(mapOf("avatar_url" to url)) { filter { eq("id", userId) } }
+
+            val updateData = buildJsonObject {
+                put("avatar_url", url)
+            }
+            db["profiles"].update(updateData) { filter { eq("id", userId) } }
             Result.success(url)
         } catch (e: Exception) {
             Result.failure(Exception("Gagal upload foto: ${e.message}"))
@@ -280,14 +292,20 @@ class AuthRepositoryImpl(
 
     override suspend fun updateUserRole(userId: String, role: String): Result<Unit> {
         return try {
-            db["profiles"].update(mapOf("role" to role)) { filter { eq("id", userId) } }
+            val updateData = buildJsonObject {
+                put("role", role)
+            }
+            db["profiles"].update(updateData) { filter { eq("id", userId) } }
             Result.success(Unit)
         } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun updateUserName(userId: String, name: String): Result<Unit> {
         return try {
-            adminDb["profiles"].update(mapOf("name" to name)) { filter { eq("id", userId) } }
+            val updateData = buildJsonObject {
+                put("name", name)
+            }
+            adminDb["profiles"].update(updateData) { filter { eq("id", userId) } }
             Result.success(Unit)
         } catch (e: Exception) { Result.failure(e) }
     }

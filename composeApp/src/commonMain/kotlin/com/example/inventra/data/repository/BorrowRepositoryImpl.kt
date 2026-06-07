@@ -21,6 +21,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -69,6 +73,7 @@ class BorrowRepositoryImpl(
             item_id = record.itemId,
             item_name = record.itemName,
             borrower_name = record.borrowerName,
+            borrower_division = record.borrowerDivision,
             borrow_date = record.borrowDate.toEpochMilliseconds(),
             due_date = record.dueDate.toEpochMilliseconds(),
             return_date = null,
@@ -100,13 +105,18 @@ class BorrowRepositoryImpl(
         // 4. Sync ke Supabase di background
         syncScope.launch {
             try {
-                val userId = auth.currentUserOrNull()?.id ?: "anonymous"
+                val currentUser = SupabaseClientProvider.client.auth.currentUserOrNull()
+                val profile = currentUser?.let {
+                    db["profiles"].select { filter { eq("id", it.id) } }.decodeSingleOrNull<com.example.inventra.data.remote.dto.ProfileDto>()
+                }
+                val division = profile?.division ?: record.borrowerDivision.ifBlank { "PUBDOK" }
+
                 val dto = InsertBorrowDto(
                     itemId = record.itemId.toString(),
-                    borrowerId = userId,
+                    borrowerId = currentUser?.id ?: "anonymous",
                     itemName = record.itemName,
                     borrowerName = record.borrowerName,
-                    division = "HMIF",
+                    division = division,
                     quantity = 1,
                     dueDate = record.dueDate.toString(),
                     status = BorrowStatus.PENDING.name
@@ -118,9 +128,10 @@ class BorrowRepositoryImpl(
                     .select { filter { eq("id", record.itemId.toString()) } }
                     .decodeSingleOrNull<ItemDto>()
                 if (currentRemote != null && currentRemote.availableStock > 0) {
-                    db["items"].update(
-                        mapOf("available_stock" to currentRemote.availableStock - 1)
-                    ) { filter { eq("id", record.itemId.toString()) } }
+                    val updateData = buildJsonObject {
+                        put("available_stock", currentRemote.availableStock - 1)
+                    }
+                    db["items"].update(updateData) { filter { eq("id", record.itemId.toString()) } }
                 }
             } catch (e: Exception) {
                 println("BORROW Supabase sync gagal: ${e.message}")
@@ -169,13 +180,12 @@ class BorrowRepositoryImpl(
 
         syncScope.launch {
             try {
-                db["borrow_records"].update(
-                    mapOf(
-                        "status" to BorrowStatus.RETURNED.name,
-                        "fine_amount" to fineAmount,
-                        "return_date" to returnDate.toString()
-                    )
-                ) { filter { eq("id", recordId.toString()) } }
+                val updateData = buildJsonObject {
+                    put("status", BorrowStatus.RETURNED.name)
+                    put("fine_amount", fineAmount)
+                    put("return_date", returnDate.toString())
+                }
+                db["borrow_records"].update(updateData) { filter { eq("id", recordId.toString()) } }
             } catch (e: Exception) {
                 println("RETURN Supabase sync gagal: ${e.message}")
             }
@@ -186,9 +196,10 @@ class BorrowRepositoryImpl(
         queries.updateStatus(status = BorrowStatus.ACTIVE.name, id = recordId)
         syncScope.launch {
             try {
-                db["borrow_records"].update(
-                    mapOf("status" to BorrowStatus.ACTIVE.name)
-                ) { filter { eq("id", recordId.toString()) } }
+                val updateData = buildJsonObject {
+                    put("status", BorrowStatus.ACTIVE.name)
+                }
+                db["borrow_records"].update(updateData) { filter { eq("id", recordId.toString()) } }
             } catch (e: Exception) {
                 println("APPROVE Supabase sync gagal: ${e.message}")
             }
@@ -222,9 +233,10 @@ class BorrowRepositoryImpl(
                 queries.deleteAll()
                 records.forEach { dto ->
                     queries.insertRecord(
-                        item_id = 0L,
+                        item_id = runCatching { dto.itemId.toLong() }.getOrDefault(0L),
                         item_name = dto.itemName,
                         borrower_name = dto.borrowerName,
+                        borrower_division = dto.division,
                         borrow_date = runCatching {
                             Instant.parse(dto.borrowDate).toEpochMilliseconds()
                         }.getOrDefault(Clock.System.now().toEpochMilliseconds()),

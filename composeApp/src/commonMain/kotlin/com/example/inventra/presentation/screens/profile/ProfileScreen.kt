@@ -13,11 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import com.example.inventra.core.util.rememberImagePickerLauncher
 import com.example.inventra.domain.model.User
 import com.example.inventra.domain.model.UserRole
 import com.example.inventra.domain.repository.AuthRepository
@@ -42,9 +45,7 @@ data class ProfileUiState(
     val editName: String = "",
     val editPhone: String = "",
     val divisionMembers: List<User> = emptyList(),
-    val isLoadingMembers: Boolean = false,
-    val showPhotoUrlDialog: Boolean = false,
-    val photoUrlInput: String = ""
+    val isLoadingMembers: Boolean = false
 )
 
 // ==================== VIEWMODEL ====================
@@ -86,24 +87,23 @@ class ProfileViewModel(
     fun exitEditMode() = _uiState.update { it.copy(isEditMode = false) }
     fun onNameChange(v: String) = _uiState.update { it.copy(editName = v) }
     fun onPhoneChange(v: String) = _uiState.update { it.copy(editPhone = v) }
-    fun showPhotoDialog() = _uiState.update { it.copy(showPhotoUrlDialog = true, photoUrlInput = it.user?.avatarUrl ?: "") }
-    fun hidePhotoDialog() = _uiState.update { it.copy(showPhotoUrlDialog = false) }
-    fun onPhotoUrlChange(v: String) = _uiState.update { it.copy(photoUrlInput = v) }
 
-    fun savePhotoUrl() {
-        val state = _uiState.value
-        val url = state.photoUrlInput.trim()
-        _uiState.update { it.copy(isSaving = true, showPhotoUrlDialog = false) }
+    fun uploadAvatar(bytes: ByteArray, fileName: String) {
+        _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
-            authRepository.updateProfile(
-                name = state.user?.name ?: state.editName,
-                phone = state.user?.phone,
-                avatarUrl = url.ifBlank { null }
-            ).onSuccess { user ->
-                _uiState.update { it.copy(isSaving = false, user = user, successMessage = "Foto profil diperbarui") }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isSaving = false, error = e.message) }
-            }
+            authRepository.updateAvatar(bytes, fileName)
+                .onSuccess { url ->
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            user = it.user?.copy(avatarUrl = url),
+                            successMessage = "Foto profil diperbarui"
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isSaving = false, error = e.message) }
+                }
         }
     }
 
@@ -141,6 +141,10 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDarkTheme = LocalThemeIsDark.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
+        viewModel.uploadAvatar(bytes, fileName)
+    }
 
     LaunchedEffect(uiState.successMessage, uiState.error) {
         uiState.successMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessages() }
@@ -192,22 +196,35 @@ fun ProfileScreen(
                     modifier = Modifier.size(96.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            (user?.name ?: "?").take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        if (user?.avatarUrl != null) {
+                            AsyncImage(
+                                model = user.avatarUrl,
+                                contentDescription = "Foto Profil",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text(
+                                (user?.name ?: "?").take(1).uppercase(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 }
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp).clickable { viewModel.showPhotoDialog() }
+                    modifier = Modifier.size(32.dp).clickable { imagePicker.launch() }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.CameraAlt, "Ganti Foto", tint = Color.White,
-                            modifier = Modifier.size(18.dp))
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                        } else {
+                            Icon(Icons.Default.CameraAlt, "Ganti Foto", tint = Color.White,
+                                modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }
@@ -325,26 +342,6 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(24.dp))
         }
-    }
-
-    // ── Dialog URL Foto ────────────────────────────────────────────────────
-    if (uiState.showPhotoUrlDialog) {
-        AlertDialog(
-            onDismissRequest = viewModel::hidePhotoDialog,
-            title = { Text("Ganti Foto Profil", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text("Masukkan URL foto (Google Drive, Imgur, dll)",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(value = uiState.photoUrlInput, onValueChange = viewModel::onPhotoUrlChange,
-                        label = { Text("URL Foto") }, placeholder = { Text("https://...") },
-                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp))
-                }
-            },
-            confirmButton = { Button(onClick = viewModel::savePhotoUrl) { Text("Simpan") } },
-            dismissButton = { TextButton(onClick = viewModel::hidePhotoDialog) { Text("Batal") } }
-        )
     }
 }
 

@@ -13,6 +13,8 @@ import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.domain.repository.ItemRepository
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -102,14 +104,18 @@ class ItemRepositoryImpl(
         )
         syncScope.launch {
             try {
-                db["items"].update(mapOf(
-                    "name" to item.name, "description" to item.description,
-                    "category" to item.category.name, "location" to item.location,
-                    "total_stock" to item.totalStock,
-                    "available_stock" to item.availableStock,
-                    "condition" to item.condition.name,
-                    "pic_name" to item.picName, "image_url" to item.imageUrl
-                )) { filter { eq("id", item.id.toString()) } }
+                val updateData = buildJsonObject {
+                    put("name", item.name)
+                    put("description", item.description)
+                    put("category", item.category.name)
+                    put("location", item.location)
+                    put("total_stock", item.totalStock)
+                    put("available_stock", item.availableStock)
+                    put("condition", item.condition.name)
+                    put("pic_name", item.picName)
+                    if (item.imageUrl != null) put("image_url", item.imageUrl)
+                }
+                db["items"].update(updateData) { filter { eq("id", item.id.toString()) } }
             } catch (e: Exception) {
                 println("Supabase update gagal: ${e.message}")
             }

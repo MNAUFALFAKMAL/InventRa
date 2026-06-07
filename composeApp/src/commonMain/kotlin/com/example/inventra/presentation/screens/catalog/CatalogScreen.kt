@@ -157,6 +157,7 @@ fun CatalogScreen(
                                 description = item.description,
                                 stock = item.availableStock,
                                 isAvailable = item.isBorrowable,
+                                imageUrl = item.imageUrl,
                                 // FIX: gunakan item.id bukan item.name
                                 onClick = {
                                     println("DEBUG CatalogScreen: tap item id=${item.id} name=${item.name}")

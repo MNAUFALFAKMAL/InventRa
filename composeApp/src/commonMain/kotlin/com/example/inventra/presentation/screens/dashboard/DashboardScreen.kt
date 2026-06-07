@@ -41,11 +41,6 @@ fun DashboardScreen(
     val viewModel: DashboardViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Cek apakah user adalah admin
-    val authRepository: AuthRepository = koinInject()
-
-    var showClearDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,15 +50,6 @@ fun DashboardScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
@@ -265,7 +251,7 @@ private fun ActiveBorrowingCard(record: BorrowRecord) {
             Column(Modifier.weight(1f)) {
                 Text(record.itemName, style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold)
-                Text("Peminjam: ${record.borrowerName}",
+                Text("Peminjam: ${record.borrowerName} (${record.borrowerDivision})",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline)
                 Text("Jatuh tempo: ${record.dueDate.formatDateOnly()}",

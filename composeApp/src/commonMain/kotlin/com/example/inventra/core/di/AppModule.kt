@@ -76,7 +76,7 @@ val viewModelModule = module {
     viewModelOf(::ProfileViewModel)
     viewModelOf(::UserManagementViewModel)
     factory { (itemId: Long?) -> AddEditItemViewModel(itemId, get(), get()) }
-    factory { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get()) }
+    factory { (itemId: Long) -> ItemDetailViewModel(itemId, get(), get(), get()) }
 }
 
 val sharedModules = listOf(

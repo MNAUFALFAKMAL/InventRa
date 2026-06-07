@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.domain.model.Item
+import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
 import kotlinx.coroutines.flow.*
@@ -24,7 +25,8 @@ sealed interface ItemDetailUiState {
 class ItemDetailViewModel(
     private val itemId: Long,
     private val itemRepository: ItemRepository,
-    private val borrowRepository: BorrowRepository
+    private val borrowRepository: BorrowRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<ItemDetailUiState> = itemRepository.getItemById(itemId)
@@ -48,7 +50,7 @@ class ItemDetailViewModel(
 
     fun requestBorrow(
         borrowerName: String,
-        borrowerDivision: String,
+        borrowerDivision: String, // parameter ini sekarang diabaikan, ambil dari repo
         onSuccess: () -> Unit,
         onError: (String) -> Unit = {}
     ) {
@@ -72,13 +74,17 @@ class ItemDetailViewModel(
 
         viewModelScope.launch {
             try {
+                val currentUser = authRepository.getCurrentUser()
+                val division = currentUser?.division?.name ?: "PUBDOK"
+
                 val now = Clock.System.now()
                 val dueDate = now.plus(2, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
 
                 val record = BorrowRecord(
                     itemId = item.id,
                     itemName = item.name,
-                    borrowerName = "$borrowerName ($borrowerDivision)",
+                    borrowerName = borrowerName,
+                    borrowerDivision = division,
                     borrowDate = now,
                     dueDate = dueDate,
                     status = BorrowStatus.PENDING

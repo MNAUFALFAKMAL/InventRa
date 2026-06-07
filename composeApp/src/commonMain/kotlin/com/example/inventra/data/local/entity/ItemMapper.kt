@@ -28,6 +28,7 @@ fun BorrowRecordEntity.toDomain(): BorrowRecord {
         itemId = item_id,
         itemName = item_name,
         borrowerName = borrower_name,
+        borrowerDivision = borrower_division,
         borrowDate = Instant.fromEpochMilliseconds(borrow_date),
         dueDate = Instant.fromEpochMilliseconds(due_date),
         returnDate = return_date?.let { Instant.fromEpochMilliseconds(it) },
