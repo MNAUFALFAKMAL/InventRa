@@ -91,7 +91,6 @@ fun HistoryScreen(
                         else -> state.records
                     }
 
-                    // Alert overdue
                     val overdueCount = state.records.count { it.status == BorrowStatus.OVERDUE }
                     if (overdueCount > 0) {
                         Card(
@@ -119,13 +118,15 @@ fun HistoryScreen(
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleSmall
                                     )
-                                    Text("Segera tindak lanjuti.", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        "Segera tindak lanjuti.",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
                         }
                     }
 
-                    // Info pending
                     if (selectedTab == 0) {
                         val pendingCount = state.records.count { it.status == BorrowStatus.PENDING }
                         if (pendingCount > 0) {
@@ -172,13 +173,17 @@ fun HistoryScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(displayedRecords) { record ->
+                            items(
+                                items = displayedRecords,
+                                key = { record -> record.id } // FIX: avoid unnecessary recomposition
+                            ) { record ->
                                 BorrowRecordCard(
                                     record = record,
                                     onApprove = if (record.status == BorrowStatus.PENDING) {
                                         { viewModel.approveRequest(record.id) }
                                     } else null,
-                                    onReturn = if (record.status == BorrowStatus.ACTIVE || record.status == BorrowStatus.OVERDUE) {
+                                    onReturn = if (record.status == BorrowStatus.ACTIVE ||
+                                        record.status == BorrowStatus.OVERDUE) {
                                         { viewModel.returnItem(record.id) }
                                     } else null
                                 )
@@ -220,7 +225,6 @@ private fun BorrowRecordCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Icon status
                 Icon(
                     imageVector = when {
                         isReturned -> Icons.Default.CheckCircle
@@ -240,7 +244,6 @@ private fun BorrowRecordCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Info
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = record.itemName,
@@ -283,7 +286,6 @@ private fun BorrowRecordCard(
                     }
                 }
 
-                // Status badge
                 Surface(
                     color = when {
                         isReturned -> MaterialTheme.colorScheme.secondaryContainer
@@ -313,10 +315,11 @@ private fun BorrowRecordCard(
                 }
             }
 
-            // Action buttons
             if (onApprove != null || onReturn != null) {
                 Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
