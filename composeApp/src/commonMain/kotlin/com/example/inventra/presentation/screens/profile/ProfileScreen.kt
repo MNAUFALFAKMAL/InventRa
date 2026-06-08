@@ -51,13 +51,28 @@ data class ProfileUiState(
 // ==================== VIEWMODEL ====================
 
 class ProfileViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val itemRepository: com.example.inventra.domain.repository.ItemRepository,
+    private val borrowRepository: com.example.inventra.domain.repository.BorrowRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init { loadProfile() }
+
+    fun resetAllData() {
+        _uiState.update { it.copy(isSaving = true) }
+        viewModelScope.launch {
+            try {
+                itemRepository.deleteAll()
+                borrowRepository.deleteAll()
+                _uiState.update { it.copy(isSaving = false, successMessage = "Data berhasil direset") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, error = "Gagal reset data: ${e.message}") }
+            }
+        }
+    }
 
     fun loadProfile() {
         _uiState.update { it.copy(isLoading = true) }
@@ -100,6 +115,7 @@ class ProfileViewModel(
                             successMessage = "Foto profil diperbarui"
                         )
                     }
+                    loadProfile() // Re-fetch to ensure sync
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSaving = false, error = e.message) }
@@ -117,6 +133,7 @@ class ProfileViewModel(
                 avatarUrl = null
             ).onSuccess { user ->
                 _uiState.update { it.copy(isSaving = false, isEditMode = false, user = user, successMessage = "Profil diperbarui") }
+                loadProfile() // Re-fetch
                 loadDivisionMembers(user)
             }.onFailure { e ->
                 _uiState.update { it.copy(isSaving = false, error = e.message) }
@@ -312,6 +329,28 @@ fun ProfileScreen(
 
             // ── Admin: Manajemen Akun ──────────────────────────────────────
             if (isAdmin) {
+                var showResetDialog by remember { mutableStateOf(false) }
+
+                if (showResetDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showResetDialog = false },
+                        title = { Text("Reset Semua Data") },
+                        text = { Text("Yakin hapus semua item & riwayat peminjaman? Tidak bisa dibatalkan.") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showResetDialog = false
+                                    viewModel.resetAllData()
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) { Text("Hapus Semua", fontWeight = FontWeight.Bold) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showResetDialog = false }) { Text("Batal") }
+                        }
+                    )
+                }
+
                 Spacer(Modifier.height(16.dp))
                 Card(modifier = Modifier.fillMaxWidth().clickable { onNavigateToUserManagement() },
                     shape = RoundedCornerShape(16.dp),
@@ -328,6 +367,26 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { showResetDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DeleteForever, null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Reset Semua Data", style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Text("Hapus seluruh item dan riwayat peminjaman",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f))
+                        }
                     }
                 }
             }

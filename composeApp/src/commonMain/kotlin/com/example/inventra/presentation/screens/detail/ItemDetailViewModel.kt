@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.domain.model.Item
+import com.example.inventra.domain.model.User
 import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
@@ -28,6 +29,10 @@ class ItemDetailViewModel(
     private val borrowRepository: BorrowRepository,
     private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val currentUser: StateFlow<User?> = flow {
+        emit(authRepository.getCurrentUser())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<ItemDetailUiState> = itemRepository.getItemById(itemId)
         .map { item ->

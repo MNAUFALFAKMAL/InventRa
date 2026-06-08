@@ -68,6 +68,7 @@ class ItemRepositoryImpl(
     override suspend fun insertItem(item: Item): Long {
         val now = Clock.System.now().toEpochMilliseconds()
         queries.insertItem(
+            remote_id = null, // Akan diupdate setelah sync
             name = item.name, description = item.description,
             category = item.category.name, location = item.location,
             total_stock = item.totalStock.toLong(),
@@ -78,13 +79,16 @@ class ItemRepositoryImpl(
         val localId = queries.lastInsertId().executeAsOne()
         syncScope.launch {
             try {
-                db["items"].insert(InsertItemDto(
+                val response = db["items"].insert(InsertItemDto(
                     name = item.name, description = item.description,
                     category = item.category.name, location = item.location,
                     totalStock = item.totalStock, availableStock = item.availableStock,
                     condition = item.condition.name, picName = item.picName,
                     imageUrl = item.imageUrl
-                ))
+                )) { select() }.decodeSingle<ItemDto>()
+                
+                // Update remote_id di lokal
+                queries.updateRemoteId(remote_id = response.id, id = localId)
             } catch (e: Exception) {
                 println("Supabase insert gagal: ${e.message}")
             }
@@ -104,6 +108,7 @@ class ItemRepositoryImpl(
         )
         syncScope.launch {
             try {
+                val targetId = item.remoteId ?: return@launch
                 val updateData = buildJsonObject {
                     put("name", item.name)
                     put("description", item.description)
@@ -115,7 +120,7 @@ class ItemRepositoryImpl(
                     put("pic_name", item.picName)
                     if (item.imageUrl != null) put("image_url", item.imageUrl)
                 }
-                db["items"].update(updateData) { filter { eq("id", item.id.toString()) } }
+                db["items"].update(updateData) { filter { eq("id", targetId) } }
             } catch (e: Exception) {
                 println("Supabase update gagal: ${e.message}")
             }
@@ -123,10 +128,12 @@ class ItemRepositoryImpl(
     }
 
     override suspend fun deleteItem(id: Long) {
+        val item = queries.getItemById(id).executeAsOneOrNull()
         queries.deleteItem(id)
         syncScope.launch {
             try {
-                db["items"].delete { filter { eq("id", id.toString()) } }
+                val targetId = item?.remote_id ?: return@launch
+                db["items"].delete { filter { eq("id", targetId) } }
             } catch (e: Exception) {
                 println("Supabase delete gagal: ${e.message}")
             }
@@ -150,11 +157,16 @@ class ItemRepositoryImpl(
     }
 
     override suspend fun deleteAll() {
+        // 1. Hapus local SQLDelight
         queries.deleteAll()
+
+        // 2. Hapus Supabase - gunakan filter yang always true
         try {
-            db["items"].delete()
+            db["items"].delete {
+                filter { neq("id", "00000000-0000-0000-0000-000000000000") }
+            }
         } catch (e: Exception) {
-            println("Supabase deleteAll gagal: ${e.message}")
+            println("deleteAll Supabase items error: ${e.message}")
         }
     }
 
@@ -178,6 +190,7 @@ class ItemRepositoryImpl(
                 val now = Clock.System.now().toEpochMilliseconds()
                 remoteItems.forEach { dto ->
                     queries.insertItem(
+                        remote_id = dto.id,
                         name = dto.name, description = dto.description,
                         category = dto.category, location = dto.location,
                         total_stock = dto.totalStock.toLong(),

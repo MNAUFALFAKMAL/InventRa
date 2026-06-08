@@ -187,8 +187,9 @@ class AuthRepositoryImpl(
                 .ifBlank { "User" }
 
             val isAdminEmail = emailStr.contains("admin")
-            val defaultRole = if (isAdminEmail) "ADMIN" else "MEMBER"
-            val defaultDivision = if (isAdminEmail) "BENDAHARA_UMUM" else "PUBDOK"
+            val isBendaharaUmum = emailStr.contains("bendahara")
+            val defaultRole = if (isAdminEmail || isBendaharaUmum) "ADMIN" else "MEMBER"
+            val defaultDivision = if (isBendaharaUmum) "BENDAHARA_UMUM" else "PUBDOK"
 
             try {
                 adminDb["profiles"].upsert(

@@ -1,5 +1,6 @@
 CREATE TABLE BorrowRecordEntity (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    remote_id         TEXT,
     item_id           INTEGER NOT NULL,
     item_name         TEXT    NOT NULL,
     borrower_name     TEXT    NOT NULL,
@@ -25,13 +26,19 @@ SELECT * FROM BorrowRecordEntity WHERE status = 'PENDING' ORDER BY borrow_date D
 getRecordById:
 SELECT * FROM BorrowRecordEntity WHERE id = ?;
 
+getRecordByRemoteId:
+SELECT * FROM BorrowRecordEntity WHERE remote_id = ?;
+
 insertRecord:
 INSERT INTO BorrowRecordEntity
-    (item_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (remote_id, item_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();
+
+updateRemoteId:
+UPDATE BorrowRecordEntity SET remote_id = ? WHERE id = ?;
 
 updateRecordStatus:
 UPDATE BorrowRecordEntity

@@ -4,12 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
+import com.example.inventra.domain.model.User
+import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
 import com.example.inventra.domain.repository.ItemRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 
 sealed interface DashboardUiState {
     data object Loading : DashboardUiState
@@ -24,8 +23,13 @@ sealed interface DashboardUiState {
 
 class DashboardViewModel(
     itemRepository: ItemRepository,
-    borrowRepository: BorrowRepository
+    borrowRepository: BorrowRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val currentUser: StateFlow<User?> = flow {
+        emit(authRepository.getCurrentUser())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<DashboardUiState> = combine(
         itemRepository.getAllItems(),

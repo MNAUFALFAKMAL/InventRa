@@ -70,6 +70,7 @@ class BorrowRepositoryImpl(
 
         // 1. Insert borrow record lokal
         queries.insertRecord(
+            remote_id = null,
             item_id = record.itemId,
             item_name = record.itemName,
             borrower_name = record.borrowerName,
@@ -84,8 +85,8 @@ class BorrowRepositoryImpl(
 
         // 2. Kurangi available_stock SEGERA
         val now = Clock.System.now().toEpochMilliseconds()
+        val existingItem = database.itemQueries.getItemById(record.itemId).executeAsOneOrNull()
         try {
-            val existingItem = database.itemQueries.getItemById(record.itemId).executeAsOneOrNull()
             if (existingItem != null && existingItem.available_stock > 0) {
                 val newStock = existingItem.available_stock - 1
                 database.itemQueries.updateAvailableStock(
@@ -111,8 +112,10 @@ class BorrowRepositoryImpl(
                 }
                 val division = profile?.division ?: record.borrowerDivision.ifBlank { "PUBDOK" }
 
+                val remoteItemId = existingItem?.remote_id ?: record.itemId.toString()
+
                 val dto = InsertBorrowDto(
-                    itemId = record.itemId.toString(),
+                    itemId = remoteItemId,
                     borrowerId = currentUser?.id ?: "anonymous",
                     itemName = record.itemName,
                     borrowerName = record.borrowerName,
@@ -121,17 +124,20 @@ class BorrowRepositoryImpl(
                     dueDate = record.dueDate.toString(),
                     status = BorrowStatus.PENDING.name
                 )
-                db["borrow_records"].insert(dto)
+                val response = db["borrow_records"].insert(dto) { select() }.decodeSingle<BorrowRecordDto>()
+                
+                // Update remote_id di lokal
+                queries.updateRemoteId(remote_id = response.id, id = localId)
 
                 // Update available_stock di Supabase
                 val currentRemote = db["items"]
-                    .select { filter { eq("id", record.itemId.toString()) } }
+                    .select { filter { eq("id", remoteItemId) } }
                     .decodeSingleOrNull<ItemDto>()
                 if (currentRemote != null && currentRemote.availableStock > 0) {
                     val updateData = buildJsonObject {
                         put("available_stock", currentRemote.availableStock - 1)
                     }
-                    db["items"].update(updateData) { filter { eq("id", record.itemId.toString()) } }
+                    db["items"].update(updateData) { filter { eq("id", remoteItemId) } }
                 }
             } catch (e: Exception) {
                 println("BORROW Supabase sync gagal: ${e.message}")
@@ -180,12 +186,13 @@ class BorrowRepositoryImpl(
 
         syncScope.launch {
             try {
+                val targetId = record.remote_id ?: return@launch
                 val updateData = buildJsonObject {
                     put("status", BorrowStatus.RETURNED.name)
                     put("fine_amount", fineAmount)
                     put("return_date", returnDate.toString())
                 }
-                db["borrow_records"].update(updateData) { filter { eq("id", recordId.toString()) } }
+                db["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
             } catch (e: Exception) {
                 println("RETURN Supabase sync gagal: ${e.message}")
             }
@@ -193,13 +200,15 @@ class BorrowRepositoryImpl(
     }
 
     override suspend fun approveRequest(recordId: Long) {
+        val record = queries.getRecordById(recordId).executeAsOneOrNull()
         queries.updateStatus(status = BorrowStatus.ACTIVE.name, id = recordId)
         syncScope.launch {
             try {
+                val targetId = record?.remote_id ?: return@launch
                 val updateData = buildJsonObject {
                     put("status", BorrowStatus.ACTIVE.name)
                 }
-                db["borrow_records"].update(updateData) { filter { eq("id", recordId.toString()) } }
+                db["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
             } catch (e: Exception) {
                 println("APPROVE Supabase sync gagal: ${e.message}")
             }
@@ -214,12 +223,11 @@ class BorrowRepositoryImpl(
     override suspend fun deleteAll() {
         queries.deleteAll()
         try {
-            // Hapus di Supabase (untuk demo reset)
             db["borrow_records"].delete {
-                filter { neq("id", "0") } // Trick agar menghapus semua
+                filter { neq("id", "00000000-0000-0000-0000-000000000000") }
             }
         } catch (e: Exception) {
-            println("DELETE ALL Supabase gagal: ${e.message}")
+            println("deleteAll Supabase borrow_records error: ${e.message}")
         }
     }
 
@@ -233,6 +241,7 @@ class BorrowRepositoryImpl(
                 queries.deleteAll()
                 records.forEach { dto ->
                     queries.insertRecord(
+                        remote_id = dto.id,
                         item_id = runCatching { dto.itemId.toLong() }.getOrDefault(0L),
                         item_name = dto.itemName,
                         borrower_name = dto.borrowerName,

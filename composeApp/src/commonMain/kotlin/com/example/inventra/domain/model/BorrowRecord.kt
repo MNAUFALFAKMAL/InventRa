@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 
 data class BorrowRecord(
     val id: Long = 0,
+    val remoteId: String? = null,
     val itemId: Long,
     val itemName: String,
     val borrowerName: String,

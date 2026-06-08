@@ -8,6 +8,7 @@ import kotlinx.datetime.Instant
 fun ItemEntity.toDomain(): Item {
     return Item(
         id = id,
+        remoteId = remote_id,
         name = name,
         description = description,
         category = try { ItemCategory.valueOf(category) } catch (e: Exception) { ItemCategory.OTHER },
@@ -25,6 +26,7 @@ fun ItemEntity.toDomain(): Item {
 fun BorrowRecordEntity.toDomain(): BorrowRecord {
     return BorrowRecord(
         id = id,
+        remoteId = remote_id,
         itemId = item_id,
         itemName = item_name,
         borrowerName = borrower_name,

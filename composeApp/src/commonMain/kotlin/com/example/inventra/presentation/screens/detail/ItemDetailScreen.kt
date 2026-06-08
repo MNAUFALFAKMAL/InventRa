@@ -34,6 +34,8 @@ fun ItemDetailScreen(
 ) {
     val viewModel: ItemDetailViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
 
     // Semua dialog state di level tertinggi composable
     var showBorrowDialog by remember { mutableStateOf(false) }
@@ -74,7 +76,7 @@ fun ItemDetailScreen(
                     }
                 },
                 actions = {
-                    if (successState != null) {
+                    if (successState != null && isAdmin) {
                         IconButton(onClick = { onNavigateToEdit(successState.item.id) }) {
                             Icon(
                                 Icons.Default.Edit,

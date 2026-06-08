@@ -1,5 +1,6 @@
 CREATE TABLE ItemEntity (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    remote_id       TEXT,
     name            TEXT    NOT NULL,
     description     TEXT    NOT NULL DEFAULT '',
     category        TEXT    NOT NULL DEFAULT 'OTHER',
@@ -27,11 +28,14 @@ ORDER BY updated_at DESC;
 getItemById:
 SELECT * FROM ItemEntity WHERE id = ?;
 
+getItemByRemoteId:
+SELECT * FROM ItemEntity WHERE remote_id = ?;
+
 insertItem:
-INSERT INTO ItemEntity (name, description, category, location,
+INSERT INTO ItemEntity (remote_id, name, description, category, location,
     total_stock, available_stock, condition, pic_name, image_url,
     created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();
@@ -42,6 +46,9 @@ SET name = ?, description = ?, category = ?, location = ?,
     total_stock = ?, available_stock = ?, condition = ?,
     pic_name = ?, image_url = ?, updated_at = ?
 WHERE id = ?;
+
+updateRemoteId:
+UPDATE ItemEntity SET remote_id = ? WHERE id = ?;
 
 updateAvailableStock:
 UPDATE ItemEntity

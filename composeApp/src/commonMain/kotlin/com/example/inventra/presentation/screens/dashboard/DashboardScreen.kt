@@ -40,6 +40,8 @@ fun DashboardScreen(
 ) {
     val viewModel: DashboardViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
 
     Scaffold(
         topBar = {
@@ -82,6 +84,7 @@ fun DashboardScreen(
                 is DashboardUiState.Success -> DashboardContent(
                     state = state,
                     paddingValues = paddingValues,
+                    isAdmin = isAdmin,
                     onNavigateToAddItem = onNavigateToAddItem
                 )
             }
@@ -93,6 +96,7 @@ fun DashboardScreen(
 private fun DashboardContent(
     state: DashboardUiState.Success,
     paddingValues: PaddingValues,
+    isAdmin: Boolean,
     onNavigateToAddItem: () -> Unit
 ) {
     Column(
@@ -160,40 +164,42 @@ private fun DashboardContent(
                 MaterialTheme.colorScheme.error, "OVERDUE", state.overdueItems.toString()
             )
         }
-        Spacer(Modifier.height(16.dp))
+        if (isAdmin) {
+            Spacer(Modifier.height(16.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Column(
-                Modifier.padding(24.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Icon(
-                    Icons.Default.AddCircle, null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "Register New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    "Quickly add new stock into the inventory database.",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(
-                    onClick = onNavigateToAddItem,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = MaterialTheme.colorScheme.primary
+                Column(
+                    Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.AddCircle, null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(48.dp)
                     )
-                ) { Text("Get Started", fontWeight = FontWeight.Bold) }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Register New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        "Quickly add new stock into the inventory database.",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onNavigateToAddItem,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) { Text("Get Started", fontWeight = FontWeight.Bold) }
+                }
             }
         }
 

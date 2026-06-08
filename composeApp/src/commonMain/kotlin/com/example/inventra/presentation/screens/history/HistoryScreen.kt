@@ -29,6 +29,8 @@ fun HistoryScreen(
 ) {
     val viewModel: HistoryViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
 
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Pending", "Aktif", "Semua")
@@ -179,11 +181,11 @@ fun HistoryScreen(
                             ) { record ->
                                 BorrowRecordCard(
                                     record = record,
-                                    onApprove = if (record.status == BorrowStatus.PENDING) {
+                                    onApprove = if (isAdmin && record.status == BorrowStatus.PENDING) {
                                         { viewModel.approveRequest(record.id) }
                                     } else null,
-                                    onReturn = if (record.status == BorrowStatus.ACTIVE ||
-                                        record.status == BorrowStatus.OVERDUE) {
+                                    onReturn = if (isAdmin && (record.status == BorrowStatus.ACTIVE ||
+                                        record.status == BorrowStatus.OVERDUE)) {
                                         { viewModel.returnItem(record.id) }
                                     } else null
                                 )

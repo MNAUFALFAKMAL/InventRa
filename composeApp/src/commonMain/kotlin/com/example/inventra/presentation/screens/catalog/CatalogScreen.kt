@@ -34,6 +34,8 @@ fun CatalogScreen(
 ) {
     val viewModel: CatalogViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
 
     val categories = listOf(
         "Semua" to ItemCategory.ALL,
@@ -68,12 +70,14 @@ fun CatalogScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddItem,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Item")
+            if (isAdmin) {
+                FloatingActionButton(
+                    onClick = onNavigateToAddItem,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Item")
+                }
             }
         },
         bottomBar = {

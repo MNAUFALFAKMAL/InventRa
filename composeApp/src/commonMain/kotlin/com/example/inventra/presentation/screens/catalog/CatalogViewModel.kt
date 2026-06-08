@@ -4,17 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.model.ItemCategory
+import com.example.inventra.domain.model.User
+import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.ItemRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 
 sealed interface CatalogUiState {
     data object Loading : CatalogUiState
@@ -29,11 +24,16 @@ sealed interface CatalogUiState {
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class CatalogViewModel(
-    private val itemRepository: ItemRepository
+    private val itemRepository: ItemRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     private val _selectedCategory = MutableStateFlow(ItemCategory.ALL)
+
+    val currentUser: StateFlow<User?> = flow {
+        emit(authRepository.getCurrentUser())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<CatalogUiState> = combine(
         // Debounce 300ms — API tidak dipanggil setiap ketikan
