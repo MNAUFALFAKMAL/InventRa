@@ -1,6 +1,7 @@
 package com.example.inventra.data.repository
 
 import app.cash.turbine.test
+import com.example.inventra.FakeBorrowRepository
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import kotlinx.coroutines.test.runTest
@@ -12,7 +13,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 
 class BorrowRepositoryTest {
 
@@ -23,7 +23,6 @@ class BorrowRepositoryTest {
         repository = FakeBorrowRepository()
     }
 
-    // Test 1
     @Test
     fun `borrowItem should add record with PENDING status`() = runTest {
         val record = createTestRecord()
@@ -37,7 +36,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 2
     @Test
     fun `getAllRecords should return all records including different statuses`() = runTest {
         repository.borrowItem(createTestRecord(itemName = "Projector"))
@@ -51,7 +49,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 3
     @Test
     fun `approveRequest should change status from PENDING to ACTIVE`() = runTest {
         val id = repository.borrowItem(createTestRecord())
@@ -65,7 +62,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 4
     @Test
     fun `returnItem should change status to RETURNED`() = runTest {
         val record = createTestRecord().copy(id = 1L, status = BorrowStatus.ACTIVE)
@@ -80,7 +76,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 5
     @Test
     fun `getActiveRecords should only return ACTIVE and OVERDUE records`() = runTest {
         repository.addRecord(createTestRecord().copy(id = 1L, status = BorrowStatus.ACTIVE))
@@ -98,7 +93,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 6
     @Test
     fun `getActiveRecords should be empty when no active borrowings`() = runTest {
         repository.addRecord(createTestRecord().copy(id = 1L, status = BorrowStatus.RETURNED))
@@ -111,7 +105,6 @@ class BorrowRepositoryTest {
         }
     }
 
-    // Test 7
     @Test
     fun `deleteAll should clear all records`() = runTest {
         repository.borrowItem(createTestRecord(itemName = "Item A"))
