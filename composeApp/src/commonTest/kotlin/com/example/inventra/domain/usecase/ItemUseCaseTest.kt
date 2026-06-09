@@ -1,7 +1,7 @@
 package com.example.inventra.domain.usecase
 
 import app.cash.turbine.test
-import com.example.inventra.data.repository.FakeItemRepository
+import com.example.inventra.FakeItemRepository
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.domain.model.ItemCondition

@@ -21,14 +21,14 @@ class CriticalFlowsUITest {
 
     // Critical Flow Test 1: Tombol login tampil dengan teks yang benar
     @Test
-    fun loginScreen_authorizeButtonIsDisplayed() {
+    fun loginScreen_loginButtonIsDisplayed() {
         composeTestRule.setContent {
             InventRaTheme {
                 LoginScreen(onLoginSuccess = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Authorize Access").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Masuk").assertIsDisplayed()
     }
 
     // Critical Flow Test 2: Error muncul saat login dengan field kosong
@@ -41,7 +41,7 @@ class CriticalFlowsUITest {
         }
 
         // Tap login tanpa mengisi apapun
-        composeTestRule.onNodeWithText("Authorize Access").performClick()
+        composeTestRule.onNodeWithText("Masuk").performClick()
 
         // Error message dari LoginViewModel: "Email dan password harus diisi"
         composeTestRule.onNodeWithText("Email dan password harus diisi").assertIsDisplayed()
@@ -58,19 +58,20 @@ class CriticalFlowsUITest {
 
         composeTestRule.onNodeWithText("Email").performTextInput("admin@hmif.itera.ac.id")
         // Verifikasi field email menerima input
-        composeTestRule.onNodeWithText("admin@hmif.itera.ac.id").assertExists()
+        // TextFieldValue might have some internal structure, but usually assertTextContains works better
+        composeTestRule.onNodeWithText("Email").assertTextContains("admin@hmif.itera.ac.id")
     }
 
-    // Critical Flow Test 4: Access Key field tampil
+    // Critical Flow Test 4: Password field tampil
     @Test
-    fun loginScreen_accessKeyFieldIsDisplayed() {
+    fun loginScreen_passwordFieldIsDisplayed() {
         composeTestRule.setContent {
             InventRaTheme {
                 LoginScreen(onLoginSuccess = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Access Key").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Password").assertIsDisplayed()
     }
 
     // Critical Flow Test 5: Header branding InventRa tampil

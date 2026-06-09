@@ -1,5 +1,6 @@
 package com.example.inventra.presentation
 
+import androidx.compose.ui.text.input.TextFieldValue
 import app.cash.turbine.test
 import com.example.inventra.FakeAuthRepository
 import com.example.inventra.FakeItemRepository
@@ -89,7 +90,7 @@ class CatalogViewModelTest {
             advanceUntilIdle()
             skipItems(1) // Initial success (all items)
             
-            viewModel.onSearchQueryChange("Project")
+            viewModel.onSearchQueryChange(TextFieldValue("Project"))
             // Debounce is 300ms in CatalogViewModel
             testDispatcher.scheduler.advanceTimeBy(400)
             advanceUntilIdle()

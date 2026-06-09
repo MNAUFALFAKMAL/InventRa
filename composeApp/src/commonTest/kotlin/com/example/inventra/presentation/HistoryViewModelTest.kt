@@ -95,8 +95,8 @@ class HistoryViewModelTest {
             role = UserRole.MEMBER, division = UserDivision.PUBDOK
         )
         
-        borrowRepository.addRecord(createTestRecord("User A"))
-        borrowRepository.addRecord(createTestRecord("User B"))
+        borrowRepository.addRecord(createTestRecord("User A", "userA"))
+        borrowRepository.addRecord(createTestRecord("User B", "userB"))
 
         viewModel.uiState.test {
             skipItems(1)
@@ -109,12 +109,13 @@ class HistoryViewModelTest {
         }
     }
 
-    private fun createTestRecord(borrower: String): BorrowRecord {
+    private fun createTestRecord(borrower: String, borrowerId: String = "anonymous"): BorrowRecord {
         return BorrowRecord(
-            id = (1..1000).random().toLong(),
+            id = (1..10000).random().toLong(),
             itemId = 1,
             itemName = "Item",
             borrowerName = borrower,
+            borrowerId = borrowerId,
             borrowDate = Clock.System.now(),
             dueDate = Clock.System.now(),
             status = BorrowStatus.PENDING

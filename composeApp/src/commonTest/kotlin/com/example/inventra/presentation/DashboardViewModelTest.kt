@@ -23,6 +23,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -40,6 +41,16 @@ class DashboardViewModelTest {
         itemRepository = FakeItemRepository()
         borrowRepository = FakeBorrowRepository()
         authRepository = FakeAuthRepository()
+        
+        // Login as admin to see all records by default in tests
+        authRepository.loggedInUser = com.example.inventra.domain.model.User(
+            id = "admin-id",
+            name = "Admin",
+            email = "admin@test.com",
+            role = com.example.inventra.domain.model.UserRole.ADMIN,
+            division = com.example.inventra.domain.model.UserDivision.BENDAHARA_UMUM
+        )
+
         viewModel = DashboardViewModel(itemRepository, borrowRepository, authRepository)
     }
 
@@ -78,12 +89,24 @@ class DashboardViewModelTest {
         borrowRepository.addRecord(createOverdueRecord())
 
         viewModel.uiState.test {
-            skipItems(1)
+            // Kita tunggu sampai state stabil di Success dengan data yang diharapkan
             advanceUntilIdle()
-
-            val state = awaitItem()
-            assertTrue(state is DashboardUiState.Success)
-            assertEquals(1, (state as DashboardUiState.Success).overdueItems)
+            
+            // Cari state Success terakhir dari semua event yang terkumpul
+            var lastSuccess: DashboardUiState.Success? = null
+            
+            // Cek item yang ada di turbine
+            while(true) {
+                val item = try { awaitItem() } catch (e: Throwable) { break }
+                if (item is DashboardUiState.Success) {
+                    lastSuccess = item
+                    // Jika sudah dapat yang kita mau, bisa break
+                    if (item.overdueItems == 1) break
+                }
+            }
+            
+            assertNotNull(lastSuccess, "Harusnya ada state Success")
+            assertEquals(1, lastSuccess.overdueItems)
             cancelAndIgnoreRemainingEvents()
         }
     }

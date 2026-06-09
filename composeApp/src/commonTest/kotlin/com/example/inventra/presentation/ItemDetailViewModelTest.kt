@@ -91,23 +91,29 @@ class ItemDetailViewModelTest {
     @Test
     fun `requestBorrow should add record to repository`() = runTest {
         itemRepository.insertItem(createTestItem(testItemId, "Borrow Me", stock = 5))
-        advanceUntilIdle()
         
-        var successCalled = false
-        viewModel.requestBorrow(
-            borrowerName = "Tester",
-            borrowerDivision = "KONTEN",
-            onSuccess = { successCalled = true }
-        )
-        
-        advanceUntilIdle()
-        assertTrue(successCalled)
-        
-        borrowRepository.getAllRecords().test {
-            val records = awaitItem()
-            assertEquals(1, records.size)
-            assertEquals("Tester", records.first().borrowerName)
-            assertEquals("Borrow Me", records.first().itemName)
+        viewModel.uiState.test {
+            skipItems(1) // Loading
+            advanceUntilIdle()
+            assertTrue(awaitItem() is ItemDetailUiState.Success)
+            
+            var successCalled = false
+            viewModel.requestBorrow(
+                borrowerName = "Tester",
+                borrowerDivision = "KONTEN",
+                onSuccess = { successCalled = true }
+            )
+            
+            advanceUntilIdle()
+            assertTrue(successCalled)
+            
+            borrowRepository.getAllRecords().test {
+                val records = awaitItem()
+                assertEquals(1, records.size)
+                assertEquals("Tester", records.first().borrowerName)
+                assertEquals("Borrow Me", records.first().itemName)
+                cancelAndIgnoreRemainingEvents()
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -115,18 +121,24 @@ class ItemDetailViewModelTest {
     @Test
     fun `requestBorrow should fail when stock is 0`() = runTest {
         itemRepository.insertItem(createTestItem(testItemId, "Out of Stock", stock = 0))
-        advanceUntilIdle()
         
-        var errorMsg = ""
-        viewModel.requestBorrow(
-            borrowerName = "Tester",
-            borrowerDivision = "KONTEN",
-            onSuccess = {},
-            onError = { errorMsg = it }
-        )
-        
-        advanceUntilIdle()
-        assertEquals("Stok barang habis", errorMsg)
+        viewModel.uiState.test {
+            skipItems(1) // Loading
+            advanceUntilIdle()
+            assertTrue(awaitItem() is ItemDetailUiState.Success)
+
+            var errorMsg = ""
+            viewModel.requestBorrow(
+                borrowerName = "Tester",
+                borrowerDivision = "KONTEN",
+                onSuccess = {},
+                onError = { errorMsg = it }
+            )
+            
+            advanceUntilIdle()
+            assertEquals("Stok barang habis", errorMsg)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private fun createTestItem(id: Long, name: String, stock: Int = 5): Item {

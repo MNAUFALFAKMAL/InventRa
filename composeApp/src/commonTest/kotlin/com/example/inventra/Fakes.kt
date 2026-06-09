@@ -143,6 +143,12 @@ class FakeItemRepository : ItemRepository {
             list.map { it.copy(availableStock = it.totalStock) }
         }
     }
+
+    override suspend fun updateAvailableStock(itemId: Long, newStock: Int) {
+        items.update { list ->
+            list.map { if (it.id == itemId) it.copy(availableStock = newStock) else it }
+        }
+    }
 }
 
 class FakeBorrowRepository : BorrowRepository {
