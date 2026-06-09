@@ -1,5 +1,6 @@
 package com.example.inventra.presentation.screens.catalog
 
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Item
@@ -28,7 +29,9 @@ class CatalogViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
+    private val _searchQuery = MutableStateFlow(TextFieldValue(""))
+    val searchQuery = _searchQuery.asStateFlow()
+
     private val _selectedCategory = MutableStateFlow(ItemCategory.ALL)
 
     val currentUser: StateFlow<User?> = flow {
@@ -37,7 +40,7 @@ class CatalogViewModel(
 
     val uiState: StateFlow<CatalogUiState> = combine(
         // Debounce 300ms — API tidak dipanggil setiap ketikan
-        _searchQuery.debounce(300L),
+        _searchQuery.map { it.text }.debounce(300L),
         _selectedCategory
     ) { query, category ->
         query to category
@@ -54,7 +57,7 @@ class CatalogViewModel(
             }
         }
     }.map { items ->
-        val query = _searchQuery.value
+        val query = _searchQuery.value.text
         val category = _selectedCategory.value
         if (items.isEmpty()) CatalogUiState.Empty
         else CatalogUiState.Success(items, query, category)
@@ -64,7 +67,7 @@ class CatalogViewModel(
         initialValue = CatalogUiState.Loading
     )
 
-    fun onSearchQueryChange(query: String) {
+    fun onSearchQueryChange(query: TextFieldValue) {
         _searchQuery.value = query
     }
 

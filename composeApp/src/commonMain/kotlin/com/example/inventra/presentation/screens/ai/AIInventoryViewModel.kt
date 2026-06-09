@@ -1,5 +1,6 @@
 package com.example.inventra.presentation.screens.ai
 
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventra.domain.model.Item
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
 // ==================== UI STATE ====================
 
 data class AIInventoryUiState(
-    val inputText: String = "",
+    val inputText: TextFieldValue = TextFieldValue(""),
     val selectedAction: InventoryAIAction = InventoryAIAction.ANALYZE_STOCK,
     val isLoading: Boolean = false,
     val result: String? = null,
@@ -103,7 +104,7 @@ class AIInventoryViewModel(
         }
     }
 
-    fun onInputTextChange(text: String) {
+    fun onInputTextChange(text: TextFieldValue) {
         _uiState.update { it.copy(inputText = text, error = null) }
     }
 
@@ -114,7 +115,7 @@ class AIInventoryViewModel(
     fun executeAction() {
         val state = _uiState.value
 
-        if (state.selectedAction.needsInput && state.inputText.isBlank()) {
+        if (state.selectedAction.needsInput && state.inputText.text.isBlank()) {
             _uiState.update { it.copy(error = "Masukkan pertanyaan terlebih dahulu") }
             return
         }
@@ -122,7 +123,7 @@ class AIInventoryViewModel(
         _uiState.update { it.copy(isLoading = true, error = null, result = null) }
 
         viewModelScope.launch {
-            val prompt = buildPrompt(state.selectedAction, state.inputText)
+            val prompt = buildPrompt(state.selectedAction, state.inputText.text)
 
             aiRepository.chat(prompt)
                 .onSuccess { result ->

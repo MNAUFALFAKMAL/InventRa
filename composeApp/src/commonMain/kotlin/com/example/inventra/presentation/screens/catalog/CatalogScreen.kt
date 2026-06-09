@@ -34,6 +34,7 @@ fun CatalogScreen(
 ) {
     val viewModel: CatalogViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
 
@@ -92,10 +93,7 @@ fun CatalogScreen(
         ) {
             // Search bar
             OutlinedTextField(
-                value = when (val s = uiState) {
-                    is CatalogUiState.Success -> s.query
-                    else -> ""
-                },
+                value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 placeholder = { Text("Cari barang...") },
                 modifier = Modifier
