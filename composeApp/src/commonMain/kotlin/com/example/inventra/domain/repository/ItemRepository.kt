@@ -17,4 +17,8 @@ interface ItemRepository {
     suspend fun refresh()
     /** Hapus semua data lokal dan di Supabase — hanya untuk demo reset */
     suspend fun deleteAll()
+    /** Kembalikan available_stock ke total_stock untuk semua item */
+    suspend fun resetAllStocks()
+    /** Update available_stock untuk item tertentu */
+    suspend fun updateAvailableStock(itemId: Long, newStock: Int)
 }

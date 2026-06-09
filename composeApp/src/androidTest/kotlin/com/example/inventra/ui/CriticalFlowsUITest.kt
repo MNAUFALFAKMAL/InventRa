@@ -9,41 +9,79 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Critical Flow UI Test for Login.
+ * Sprint 4 fix.
+ */
 @RunWith(AndroidJUnit4::class)
 class CriticalFlowsUITest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    // Critical Flow Test 1: Tombol login tampil dengan teks yang benar
     @Test
-    fun loginFlow_showsErrorOnEmptyFields() {
+    fun loginScreen_authorizeButtonIsDisplayed() {
         composeTestRule.setContent {
             InventRaTheme {
                 LoginScreen(onLoginSuccess = {})
             }
         }
 
-        // Tap login without credentials
-        composeTestRule.onNodeWithText("MASUK SEKARANG").performClick()
-        
-        // Wait for error message (this depends on how the UI handles errors)
-        // Usually it shows a Snackbar or error text
-        composeTestRule.onNodeWithText("Email dan password tidak boleh kosong").assertExists()
+        composeTestRule.onNodeWithText("Authorize Access").assertIsDisplayed()
     }
 
+    // Critical Flow Test 2: Error muncul saat login dengan field kosong
     @Test
-    fun loginFlow_canInputCredentials() {
+    fun loginScreen_showsErrorWhenFieldsAreEmpty() {
         composeTestRule.setContent {
             InventRaTheme {
                 LoginScreen(onLoginSuccess = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Email").performTextInput("admin@hmif.com")
-        composeTestRule.onNodeWithText("Password").performTextInput("password123")
-        
-        composeTestRule.onNodeWithText("admin@hmif.com").assertExists()
-        // Password shouldn't be visible in clear text depending on implementation, 
-        // but it's in the text field.
+        // Tap login tanpa mengisi apapun
+        composeTestRule.onNodeWithText("Authorize Access").performClick()
+
+        // Error message dari LoginViewModel: "Email dan password harus diisi"
+        composeTestRule.onNodeWithText("Email dan password harus diisi").assertIsDisplayed()
+    }
+
+    // Critical Flow Test 3: User bisa input email
+    @Test
+    fun loginScreen_canTypeEmail() {
+        composeTestRule.setContent {
+            InventRaTheme {
+                LoginScreen(onLoginSuccess = {})
+            }
+        }
+
+        composeTestRule.onNodeWithText("Email").performTextInput("admin@hmif.itera.ac.id")
+        // Verifikasi field email menerima input
+        composeTestRule.onNodeWithText("admin@hmif.itera.ac.id").assertExists()
+    }
+
+    // Critical Flow Test 4: Access Key field tampil
+    @Test
+    fun loginScreen_accessKeyFieldIsDisplayed() {
+        composeTestRule.setContent {
+            InventRaTheme {
+                LoginScreen(onLoginSuccess = {})
+            }
+        }
+
+        composeTestRule.onNodeWithText("Access Key").assertIsDisplayed()
+    }
+
+    // Critical Flow Test 5: Header branding InventRa tampil
+    @Test
+    fun loginScreen_showsInventRaBranding() {
+        composeTestRule.setContent {
+            InventRaTheme {
+                LoginScreen(onLoginSuccess = {})
+            }
+        }
+
+        composeTestRule.onNodeWithText("InventRa").assertIsDisplayed()
     }
 }

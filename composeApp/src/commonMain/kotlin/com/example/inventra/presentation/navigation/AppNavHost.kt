@@ -4,16 +4,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -32,6 +24,7 @@ import com.example.inventra.presentation.screens.detail.ItemDetailScreen
 import com.example.inventra.presentation.screens.history.HistoryScreen
 import com.example.inventra.presentation.screens.management.UserManagementScreen
 import com.example.inventra.presentation.screens.profile.ProfileScreen
+import com.example.inventra.presentation.screens.splash.SplashScreen
 import org.koin.compose.koinInject
 
 @Composable
@@ -43,32 +36,31 @@ fun AppNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    var startDestination by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        startDestination = if (authRepository.isLoggedIn) {
-            Routes.Dashboard.route
-        } else {
-            Routes.Login.route
-        }
-    }
-
-    if (startDestination == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
     NavHost(
         navController = navController,
-        startDestination = startDestination!!,
+        startDestination = Routes.Splash.route,   // Sprint 3 fix: MULAI DARI SPLASH
         modifier = modifier,
         enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
         exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
         popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
         popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
     ) {
+        // SPLASH SCREEN - Sprint 3 fix
+        composable(Routes.Splash.route) {
+            SplashScreen(
+                onSplashComplete = {
+                    val destination = if (authRepository.isLoggedIn) {
+                        Routes.Dashboard.route
+                    } else {
+                        Routes.Login.route
+                    }
+                    navController.navigate(destination) {
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Routes.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -154,7 +146,7 @@ fun AppNavHost(
                 onNavigate = { route -> navigateBottomNav(navController, route) },
                 onLogoutClick = {
                     navController.navigate(Routes.Login.route) {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo(Routes.Dashboard.route) { inclusive = true }
                     }
                 },
                 onNavigateToUserManagement = {

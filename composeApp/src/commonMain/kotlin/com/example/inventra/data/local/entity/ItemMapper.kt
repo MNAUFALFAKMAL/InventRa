@@ -17,6 +17,7 @@ fun ItemEntity.toDomain(): Item {
         availableStock = available_stock.toInt(), // FIX: bukan quantity
         condition = try { ItemCondition.valueOf(condition) } catch (e: Exception) { ItemCondition.GOOD },
         picName = pic_name,
+        picPhone = pic_phone,
         imageUrl = image_url,
         createdAt = Instant.fromEpochMilliseconds(created_at),
         updatedAt = Instant.fromEpochMilliseconds(updated_at)
@@ -28,6 +29,7 @@ fun BorrowRecordEntity.toDomain(): BorrowRecord {
         id = id,
         remoteId = remote_id,
         itemId = item_id,
+        borrowerId = borrower_id,
         itemName = item_name,
         borrowerName = borrower_name,
         borrowerDivision = borrower_division,

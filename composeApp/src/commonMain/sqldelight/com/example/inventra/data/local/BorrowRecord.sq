@@ -2,6 +2,7 @@ CREATE TABLE BorrowRecordEntity (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     remote_id         TEXT,
     item_id           INTEGER NOT NULL,
+    borrower_id       TEXT    NOT NULL DEFAULT '',
     item_name         TEXT    NOT NULL,
     borrower_name     TEXT    NOT NULL,
     borrower_division TEXT    NOT NULL DEFAULT '',
@@ -31,8 +32,8 @@ SELECT * FROM BorrowRecordEntity WHERE remote_id = ?;
 
 insertRecord:
 INSERT INTO BorrowRecordEntity
-    (remote_id, item_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (remote_id, item_id, borrower_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();

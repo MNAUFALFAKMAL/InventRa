@@ -9,6 +9,7 @@ CREATE TABLE ItemEntity (
     available_stock INTEGER NOT NULL DEFAULT 1,
     condition       TEXT    NOT NULL DEFAULT 'GOOD',
     pic_name        TEXT    NOT NULL DEFAULT '',
+    pic_phone       TEXT    NOT NULL DEFAULT '',
     image_url       TEXT,
     created_at      INTEGER NOT NULL,
     updated_at      INTEGER NOT NULL
@@ -33,9 +34,9 @@ SELECT * FROM ItemEntity WHERE remote_id = ?;
 
 insertItem:
 INSERT INTO ItemEntity (remote_id, name, description, category, location,
-    total_stock, available_stock, condition, pic_name, image_url,
+    total_stock, available_stock, condition, pic_name, pic_phone, image_url,
     created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();
@@ -44,7 +45,7 @@ updateItem:
 UPDATE ItemEntity
 SET name = ?, description = ?, category = ?, location = ?,
     total_stock = ?, available_stock = ?, condition = ?,
-    pic_name = ?, image_url = ?, updated_at = ?
+    pic_name = ?, pic_phone = ?, image_url = ?, updated_at = ?
 WHERE id = ?;
 
 updateRemoteId:
@@ -54,6 +55,9 @@ updateAvailableStock:
 UPDATE ItemEntity
 SET available_stock = ?, updated_at = ?
 WHERE id = ?;
+
+resetAllStocks:
+UPDATE ItemEntity SET available_stock = total_stock, updated_at = ?;
 
 deleteItem:
 DELETE FROM ItemEntity WHERE id = ?;

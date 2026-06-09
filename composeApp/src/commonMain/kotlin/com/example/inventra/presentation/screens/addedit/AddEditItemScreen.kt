@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -51,7 +52,7 @@ fun AddEditItemScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -132,14 +133,28 @@ fun AddEditItemScreen(
             )
 
             // PIC
-            OutlinedTextField(
-                value = uiState.picName,
-                onValueChange = viewModel::onPicNameChange,
-                label = { Text("Penanggung Jawab (PIC)") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = uiState.picName,
+                    onValueChange = viewModel::onPicNameChange,
+                    label = { Text("Nama PIC") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = uiState.picPhone,
+                    onValueChange = viewModel::onPicPhoneChange,
+                    label = { Text("No. HP PIC") },
+                    placeholder = { Text("08xx") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                    )
+                )
+            }
 
             // ── Foto Barang dari Galeri ──────────────────────────────────────
             Text(
@@ -280,7 +295,7 @@ private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) 
             value = selected.displayName, onValueChange = {}, readOnly = true,
             label = { Text("Kategori") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true),
             shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -303,7 +318,7 @@ private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemConditio
             value = selected.displayName, onValueChange = {}, readOnly = true,
             label = { Text("Kondisi Barang") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true),
             shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

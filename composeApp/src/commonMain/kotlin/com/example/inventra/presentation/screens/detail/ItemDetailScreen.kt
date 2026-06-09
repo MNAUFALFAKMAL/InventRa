@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,6 +49,12 @@ fun ItemDetailScreen(
     // Resolve successState di luar Scaffold agar bisa diakses di bottomBar
     val successState = uiState as? ItemDetailUiState.Success
 
+    LaunchedEffect(showBorrowDialog) {
+        if (showBorrowDialog && borrowerName.isBlank()) {
+            borrowerName = currentUser?.name ?: ""
+        }
+    }
+
     LaunchedEffect(snackbarMessage) {
         if (snackbarMessage.isNotBlank()) {
             snackbarHostState.showSnackbar(snackbarMessage)
@@ -69,7 +76,7 @@ fun ItemDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.secondary
                         )
@@ -330,7 +337,8 @@ fun ItemDetailScreen(
                             InfoRow("Kondisi", item.condition.displayName)
                             InfoRow("Total Stok", "${item.totalStock} unit")
                             InfoRow("Tersedia", "${item.availableStock} unit")
-                            InfoRow("PIC", item.picName.ifBlank { "-" }, isLast = true)
+                            InfoRow("PIC", item.picName.ifBlank { "-" })
+                            InfoRow("No. HP PIC", item.picPhone.ifBlank { "-" }, isLast = true)
                         }
                     }
 

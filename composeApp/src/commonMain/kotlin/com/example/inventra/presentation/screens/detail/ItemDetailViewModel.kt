@@ -87,6 +87,7 @@ class ItemDetailViewModel(
 
                 val record = BorrowRecord(
                     itemId = item.id,
+                    borrowerId = currentUser?.id ?: "anonymous",
                     itemName = item.name,
                     borrowerName = borrowerName,
                     borrowerDivision = division,

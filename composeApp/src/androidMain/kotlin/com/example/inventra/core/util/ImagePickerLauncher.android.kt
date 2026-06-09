@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 actual fun rememberImagePickerLauncher(
-    onImagePicked: (ByteArray, String) -> Unit
+    onImagePicked: (bytes: ByteArray, fileName: String) -> Unit,
 ): ImagePickerLauncher {
     val context = LocalContext.current
 

@@ -34,7 +34,7 @@ class HistoryViewModel(
         val filteredRecords = if (user.role == UserRole.ADMIN) {
             records
         } else {
-            records.filter { it.borrowerName == user.name } // Simple filter by name, ideally by borrowerId
+            records.filter { it.borrowerId == user.id }
         }
         
         if (filteredRecords.isEmpty()) HistoryUiState.Empty

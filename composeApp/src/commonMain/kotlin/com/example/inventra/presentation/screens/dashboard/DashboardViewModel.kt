@@ -33,15 +33,28 @@ class DashboardViewModel(
 
     val uiState: StateFlow<DashboardUiState> = combine(
         itemRepository.getAllItems(),
-        borrowRepository.getActiveRecords()
-    ) { items, activeRecords ->
-        val borrowedCount = items.count { it.availableStock < it.totalStock }
-        val overdueCount = activeRecords.count { it.status == BorrowStatus.OVERDUE }
+        borrowRepository.getAllRecords(), // Ambil semua record untuk count global
+        currentUser
+    ) { items, allRecords, user ->
+        val borrowedCount = allRecords.count { 
+            it.status == BorrowStatus.ACTIVE || it.status == BorrowStatus.OVERDUE 
+        }
+        
+        val filteredActive = if (user?.role == com.example.inventra.domain.model.UserRole.ADMIN) {
+            allRecords.filter { it.status == BorrowStatus.ACTIVE || it.status == BorrowStatus.OVERDUE }
+        } else {
+            allRecords.filter { 
+                (it.status == BorrowStatus.ACTIVE || it.status == BorrowStatus.OVERDUE) && 
+                it.borrowerId == user?.id 
+            }
+        }
+        
+        val overdueCount = filteredActive.count { it.status == BorrowStatus.OVERDUE }
         DashboardUiState.Success(
             totalItems = items.size,
             borrowedItems = borrowedCount,
             overdueItems = overdueCount,
-            activeBorrowings = activeRecords.take(5)
+            activeBorrowings = filteredActive.take(5)
         )
     }.stateIn(
         scope = viewModelScope,

@@ -74,6 +74,7 @@ class ItemRepositoryImpl(
             total_stock = item.totalStock.toLong(),
             available_stock = item.availableStock.toLong(),
             condition = item.condition.name, pic_name = item.picName,
+            pic_phone = item.picPhone,
             image_url = item.imageUrl, created_at = now, updated_at = now
         )
         val localId = queries.lastInsertId().executeAsOne()
@@ -84,6 +85,7 @@ class ItemRepositoryImpl(
                     category = item.category.name, location = item.location,
                     totalStock = item.totalStock, availableStock = item.availableStock,
                     condition = item.condition.name, picName = item.picName,
+                    picPhone = item.picPhone,
                     imageUrl = item.imageUrl
                 )) { select() }.decodeSingle<ItemDto>()
                 
@@ -104,6 +106,7 @@ class ItemRepositoryImpl(
             total_stock = item.totalStock.toLong(),
             available_stock = item.availableStock.toLong(),
             condition = item.condition.name, pic_name = item.picName,
+            pic_phone = item.picPhone,
             image_url = item.imageUrl, updated_at = now, id = item.id
         )
         syncScope.launch {
@@ -118,6 +121,7 @@ class ItemRepositoryImpl(
                     put("available_stock", item.availableStock)
                     put("condition", item.condition.name)
                     put("pic_name", item.picName)
+                    put("pic_phone", item.picPhone)
                     if (item.imageUrl != null) put("image_url", item.imageUrl)
                 }
                 db["items"].update(updateData) { filter { eq("id", targetId) } }
@@ -170,6 +174,23 @@ class ItemRepositoryImpl(
         }
     }
 
+    override suspend fun resetAllStocks() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        queries.resetAllStocks(now)
+        lastSyncTime = now // Reset cooldown
+    }
+
+    override suspend fun updateAvailableStock(itemId: Long, newStock: Int) {
+        val now = Clock.System.now().toEpochMilliseconds()
+        queries.updateAvailableStock(
+            available_stock = newStock.toLong(),
+            updated_at = now,
+            id = itemId
+        )
+        // Reset cooldown agar sync tidak menimpa perubahan lokal yang baru saja dibuat
+        lastSyncTime = now
+    }
+
     private fun triggerSyncIfStale() {
         val now = Clock.System.now().toEpochMilliseconds()
         if (now - lastSyncTime > SYNC_COOLDOWN_MS) {
@@ -183,7 +204,7 @@ class ItemRepositoryImpl(
     private suspend fun syncItemsFromSupabase() {
         try {
             val remoteItems = db["items"]
-                .select { filter { eq("is_active", true) } }
+                .select()
                 .decodeList<ItemDto>()
             database.transaction {
                 queries.deleteAll()
@@ -196,6 +217,7 @@ class ItemRepositoryImpl(
                         total_stock = dto.totalStock.toLong(),
                         available_stock = dto.availableStock.toLong(),
                         condition = dto.condition, pic_name = dto.picName,
+                        pic_phone = dto.picPhone,
                         image_url = dto.imageUrl,
                         created_at = now, updated_at = now
                     )
@@ -203,7 +225,8 @@ class ItemRepositoryImpl(
             }
             println("SYNC ITEMS: ${remoteItems.size} items")
         } catch (e: Exception) {
-            println("SYNC ITEMS offline: ${e.message}")
+            println("SYNC ITEMS error: ${e.message}")
+            e.printStackTrace()
         }
     }
 }

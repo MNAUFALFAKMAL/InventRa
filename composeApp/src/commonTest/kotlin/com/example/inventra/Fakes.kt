@@ -137,6 +137,12 @@ class FakeItemRepository : ItemRepository {
     override suspend fun deleteAll() {
         items.update { emptyList() }
     }
+
+    override suspend fun resetAllStocks() {
+        items.update { list ->
+            list.map { it.copy(availableStock = it.totalStock) }
+        }
+    }
 }
 
 class FakeBorrowRepository : BorrowRepository {

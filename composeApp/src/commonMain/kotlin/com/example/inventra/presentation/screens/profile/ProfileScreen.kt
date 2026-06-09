@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -71,6 +72,13 @@ class ProfileViewModel(
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = "Gagal reset data: ${e.message}") }
             }
+        }
+    }
+
+    fun logout(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.logout()
+            onComplete()
         }
     }
 
@@ -392,10 +400,14 @@ fun ProfileScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            OutlinedButton(onClick = onLogoutClick, modifier = Modifier.fillMaxWidth().height(50.dp),
+            OutlinedButton(
+                onClick = {
+                    viewModel.logout { onLogoutClick() }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                Icon(Icons.Default.Logout, null)
+                Icon(Icons.AutoMirrored.Filled.Logout, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Logout Akun", fontWeight = FontWeight.Bold)
             }

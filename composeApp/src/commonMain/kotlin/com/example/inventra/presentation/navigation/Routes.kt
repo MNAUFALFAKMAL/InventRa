@@ -1,6 +1,7 @@
 package com.example.inventra.presentation.navigation
 
 sealed class Routes(val route: String) {
+    object Splash : Routes("splash_screen")       // Sprint 3 fix
     object Login : Routes("login_screen")
     object Dashboard : Routes("dashboard_screen")
     object Catalog : Routes("catalog_screen")

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -184,8 +185,8 @@ fun HistoryScreen(
                                     onApprove = if (isAdmin && record.status == BorrowStatus.PENDING) {
                                         { viewModel.approveRequest(record.id) }
                                     } else null,
-                                    onReturn = if (isAdmin && (record.status == BorrowStatus.ACTIVE ||
-                                        record.status == BorrowStatus.OVERDUE)) {
+                                    onReturn = if (record.status == BorrowStatus.ACTIVE ||
+                                        record.status == BorrowStatus.OVERDUE) {
                                         { viewModel.returnItem(record.id) }
                                     } else null
                                 )
@@ -354,7 +355,7 @@ private fun BorrowRecordCard(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                         ) {
                             Icon(
-                                Icons.Default.AssignmentReturn,
+                                Icons.AutoMirrored.Filled.AssignmentReturn,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )

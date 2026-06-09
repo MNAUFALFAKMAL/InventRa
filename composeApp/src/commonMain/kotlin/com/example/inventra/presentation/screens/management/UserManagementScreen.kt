@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -84,7 +85,17 @@ class UserManagementViewModel(
     fun onNewNameChange(v: String) = _uiState.update { it.copy(newName = v) }
     fun onNewEmailChange(v: String) = _uiState.update { it.copy(newEmail = v) }
     fun onNewPasswordChange(v: String) = _uiState.update { it.copy(newPassword = v) }
-    fun onNewDivisionChange(v: UserDivision) = _uiState.update { it.copy(newDivision = v) }
+    
+    // Sprint 4 fix: Otomatisasi role berdasarkan divisi
+    fun onNewDivisionChange(v: UserDivision) {
+        _uiState.update { 
+            it.copy(
+                newDivision = v,
+                newRole = if (v == UserDivision.BENDAHARA_UMUM) UserRole.ADMIN else UserRole.MEMBER
+            )
+        }
+    }
+
     fun onNewRoleChange(v: UserRole) = _uiState.update { it.copy(newRole = v) }
 
     fun registerUser() {
@@ -205,7 +216,7 @@ fun UserManagementScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 actions = {
@@ -544,7 +555,7 @@ private fun RegisterUserDialog(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDivisionMenu)
                         },
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                        modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
                     )
                     ExposedDropdownMenu(
                         expanded = showDivisionMenu,
@@ -576,7 +587,7 @@ private fun RegisterUserDialog(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRoleMenu)
                         },
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                        modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
                     )
                     ExposedDropdownMenu(
                         expanded = showRoleMenu,

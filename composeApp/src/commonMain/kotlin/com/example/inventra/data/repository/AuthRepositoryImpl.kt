@@ -111,13 +111,13 @@ class AuthRepositoryImpl(
 
             try {
                 adminDb["profiles"].upsert(
-                    mapOf(
-                        "id" to newUserId,
-                        "name" to name,
-                        "role" to role,
-                        "division" to division,
-                        "is_active" to true
-                    )
+                    buildJsonObject {
+                        put("id", newUserId)
+                        put("name", name)
+                        put("role", role)
+                        put("division", division)
+                        put("is_active", true)
+                    }
                 )
                 println("REGISTER: profile upserted")
             } catch (e: Exception) {
@@ -186,20 +186,22 @@ class AuthRepositoryImpl(
                 .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
                 .ifBlank { "User" }
 
-            val isAdminEmail = emailStr.contains("admin")
-            val isBendaharaUmum = emailStr.contains("bendahara")
-            val defaultRole = if (isAdminEmail || isBendaharaUmum) "ADMIN" else "MEMBER"
-            val defaultDivision = if (isBendaharaUmum) "BENDAHARA_UMUM" else "PUBDOK"
+            val isBendaharaEmail = emailStr.contains("bendahara", ignoreCase = true) || 
+                                  emailStr.contains("admin", ignoreCase = true)
+            
+            // Sprint 4 fix: Bendahara Umum otomatis ADMIN, divisi lain otomatis MEMBER
+            val defaultDivision = if (isBendaharaEmail) "BENDAHARA_UMUM" else "PUBDOK"
+            val defaultRole = if (defaultDivision == "BENDAHARA_UMUM") "ADMIN" else "MEMBER"
 
             try {
                 adminDb["profiles"].upsert(
-                    mapOf(
-                        "id" to authUser.id,
-                        "name" to defaultName,
-                        "role" to defaultRole,
-                        "division" to defaultDivision,
-                        "is_active" to true
-                    )
+                    buildJsonObject {
+                        put("id", authUser.id)
+                        put("name", defaultName)
+                        put("role", defaultRole)
+                        put("division", defaultDivision)
+                        put("is_active", true)
+                    }
                 )
                 println("LOGIN: profile berhasil dibuat: $defaultName / $defaultRole / $defaultDivision")
             } catch (e: Exception) {

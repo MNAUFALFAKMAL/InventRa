@@ -6,6 +6,7 @@ data class BorrowRecord(
     val id: Long = 0,
     val remoteId: String? = null,
     val itemId: Long,
+    val borrowerId: String = "",
     val itemName: String,
     val borrowerName: String,
     val borrowerDivision: String = "",

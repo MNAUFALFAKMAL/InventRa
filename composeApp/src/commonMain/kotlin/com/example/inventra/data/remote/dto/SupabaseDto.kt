@@ -13,6 +13,7 @@ data class ItemDto(
     @SerialName("available_stock") val availableStock: Int = 1,
     val condition: String = "GOOD",
     @SerialName("pic_name") val picName: String = "",
+    @SerialName("pic_phone") val picPhone: String = "",
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("is_active") val isActive: Boolean = true,
     @SerialName("created_at") val createdAt: String? = null,
@@ -61,6 +62,7 @@ data class InsertItemDto(
     @SerialName("available_stock") val availableStock: Int = 1,
     val condition: String = "GOOD",
     @SerialName("pic_name") val picName: String = "",
+    @SerialName("pic_phone") val picPhone: String = "",
     @SerialName("image_url") val imageUrl: String? = null
 )
 
