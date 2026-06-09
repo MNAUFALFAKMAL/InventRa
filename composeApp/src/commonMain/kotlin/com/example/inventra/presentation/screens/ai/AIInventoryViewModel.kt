@@ -144,8 +144,8 @@ class AIInventoryViewModel(
         val inventarySummary = buildInventarySummary()
 
         val systemContext = """
-            Kamu adalah asisten manajemen inventaris untuk HMIF ITERA (Himpunan Mahasiswa Informatika Institut Teknologi Sumatera).
-            Kamu membantu pengelolaan aset dan barang-barang organisasi.
+            Kamu adalah asisten manajemen inventaris untuk Kabinet Nexara HMIF ITERA 2026 (Himpunan Mahasiswa Informatika Institut Teknologi Sumatera).
+            Kamu membantu pengurus Nexara dalam mengelola aset dan barang-barang organisasi.
             Selalu gunakan Bahasa Indonesia yang jelas dan profesional.
             Berikan jawaban yang terstruktur, praktis, dan actionable.
             

@@ -1,11 +1,11 @@
-# 📦 InventRa — Inventaris HMIF ITERA
+# 📦 InventRa — Inventaris Nexara
 
 ![CI](https://github.com/MNAUFALFAKMAL/InventRa/actions/workflows/ci.yml/badge.svg)
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-brightgreen)
 ![KMP](https://img.shields.io/badge/KMP-Kotlin%20Multiplatform-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**InventRa** adalah aplikasi manajemen inventaris cerdas yang dirancang khusus untuk pengurus **HMIF ITERA**. Aplikasi ini memungkinkan peminjaman dan pengembalian aset organisasi secara terorganisir dengan bantuan asisten AI.
+**InventRa** adalah aplikasi manajemen inventaris cerdas yang dirancang khusus untuk pengurus **HMIF ITERA Kabinet Nexara 2026**. Aplikasi ini memungkinkan peminjaman dan pengembalian aset organisasi secara terorganisir dengan bantuan asisten AI.
 
 ---
 
@@ -28,7 +28,7 @@
 
 ---
 
-*InventRa — Solusi Inventaris Digital untuk HMIF ITERA*
+*InventRa — Solusi Inventaris Digital untuk HMIF ITERA Kabinet Nexara*
 
 ```
 ┌─────────────────────────────────────────┐

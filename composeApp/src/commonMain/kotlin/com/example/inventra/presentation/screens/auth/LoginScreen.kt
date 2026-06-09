@@ -76,9 +76,16 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Integrated Inventory Management for HMIF",
+                text = "Integrated Inventory Management",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "HMIF Nexara 2026",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
