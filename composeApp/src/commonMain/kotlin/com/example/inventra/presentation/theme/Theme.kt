@@ -13,29 +13,31 @@ import androidx.compose.ui.graphics.Color
 val LocalThemeIsDark = compositionLocalOf { mutableStateOf(false) }
 
 // --- Light Colors ---
-private val LightPrimary = Color(0xFF003F7C)
-private val LightPrimaryContainer = Color(0xFF17579F)
-private val LightOnPrimaryContainer = Color(0xFFFFFFFF)
-private val LightSecondary = Color(0xFF606200)
-private val LightSecondaryContainer = Color(0xFFE3E838)
-private val LightOnSecondaryContainer = Color(0xFF646700)
-private val LightBackground = Color(0xFFF8F9FA)
-private val LightSurface = Color(0xFFFFFFFF)
-private val LightSurfaceVariant = Color(0xFFE1E3E4)
-private val LightOutline = Color(0xFF727782)
+private val LightPrimary = Color(0xFF005691) // Blue HMIF
+private val LightPrimaryContainer = Color(0xFFD1E4FF)
+private val LightOnPrimaryContainer = Color(0xFF001D35)
+private val LightSecondary = Color(0xFF6B5F00) // Gold/Yellow HMIF muted
+private val LightSecondaryContainer = Color(0xFFFBE46D)
+private val LightOnSecondaryContainer = Color(0xFF211B00)
+private val LightTertiary = Color(0xFF456633) // Dark Green HMIF
+private val LightTertiaryContainer = Color(0xFFC6EFAD)
+private val LightBackground = Color(0xFFFDFBFF)
+private val LightSurface = Color(0xFFFDFBFF)
+private val LightSurfaceVariant = Color(0xFFDFE2EB)
+private val LightOutline = Color(0xFF73777F)
 private val LightError = Color(0xFFBA1A1A)
 
 // --- Dark Colors ---
-private val DarkPrimary = Color(0xFFA7C8FF) // Biru yang lebih terang untuk visibilitas
-private val DarkPrimaryContainer = Color(0xFF003F7C)
-private val DarkOnPrimaryContainer = Color(0xFFD5E3FF)
-private val DarkSecondary = Color(0xFFCACE18) // Kuning/hijau yang lebih terang
-private val DarkSecondaryContainer = Color(0xFF484A00)
-private val DarkOnSecondaryContainer = Color(0xFFE3E838)
-private val DarkBackground = Color(0xFF191C1D) // Latar belakang gelap
-private val DarkSurface = Color(0xFF2E3132) // Permukaan card gelap
-private val DarkSurfaceVariant = Color(0xFF424751)
-private val DarkOutline = Color(0xFFC2C6D2)
+private val DarkPrimary = Color(0xFF9ECAFF)
+private val DarkPrimaryContainer = Color(0xFF004875)
+private val DarkOnPrimaryContainer = Color(0xFFD1E4FF)
+private val DarkSecondary = Color(0xFFDEC84D)
+private val DarkSecondaryContainer = Color(0xFF514700)
+private val DarkOnSecondaryContainer = Color(0xFFFBE46D)
+private val DarkBackground = Color(0xFF1A1C1E)
+private val DarkSurface = Color(0xFF1A1C1E)
+private val DarkSurfaceVariant = Color(0xFF43474E)
+private val DarkOutline = Color(0xFF8D9199)
 private val DarkError = Color(0xFFFFB4AB)
 
 private val LightColorScheme = lightColorScheme(
@@ -45,6 +47,8 @@ private val LightColorScheme = lightColorScheme(
     secondary = LightSecondary,
     secondaryContainer = LightSecondaryContainer,
     onSecondaryContainer = LightOnSecondaryContainer,
+    tertiary = LightTertiary,
+    tertiaryContainer = LightTertiaryContainer,
     background = LightBackground,
     surface = LightSurface,
     surfaceVariant = LightSurfaceVariant,

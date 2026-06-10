@@ -21,6 +21,7 @@ import com.example.inventra.presentation.components.InventRaBottomNav
 import com.example.inventra.presentation.components.LoadingIndicator
 import com.example.inventra.presentation.util.formatDateOnly
 import org.koin.compose.viewmodel.koinViewModel
+import com.example.inventra.core.util.rememberImagePickerLauncher
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +33,14 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
+    
+    var recordToReturn by remember { mutableStateOf<Long?>(null) }
+    val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
+        recordToReturn?.let { id ->
+            viewModel.returnItem(id, bytes, fileName)
+            recordToReturn = null
+        }
+    }
 
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Pending", "Aktif", "Semua")
@@ -86,8 +95,10 @@ fun HistoryScreen(
                 }
 
                 is HistoryUiState.Success -> {
-                    val displayedRecords = when (selectedTab) {
-                        0 -> state.records.filter { it.status == BorrowStatus.PENDING }
+                        val displayedRecords = when (selectedTab) {
+                        0 -> state.records.filter { 
+                            it.status == BorrowStatus.PENDING || it.status == BorrowStatus.PENDING_RETURN 
+                        }
                         1 -> state.records.filter {
                             it.status == BorrowStatus.ACTIVE || it.status == BorrowStatus.OVERDUE
                         }
@@ -131,7 +142,9 @@ fun HistoryScreen(
                     }
 
                     if (selectedTab == 0) {
-                        val pendingCount = state.records.count { it.status == BorrowStatus.PENDING }
+                        val pendingCount = state.records.count { 
+                            it.status == BorrowStatus.PENDING || it.status == BorrowStatus.PENDING_RETURN 
+                        }
                         if (pendingCount > 0) {
                             Card(
                                 colors = CardDefaults.cardColors(
@@ -153,7 +166,7 @@ fun HistoryScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "$pendingCount permintaan menunggu persetujuan Admin.",
+                                        "$pendingCount permintaan/pengembalian menunggu persetujuan Admin.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
@@ -185,9 +198,15 @@ fun HistoryScreen(
                                     onApprove = if (isAdmin && record.status == BorrowStatus.PENDING) {
                                         { viewModel.approveRequest(record.id) }
                                     } else null,
-                                    onReturn = if (record.status == BorrowStatus.ACTIVE ||
-                                        record.status == BorrowStatus.OVERDUE) {
-                                        { viewModel.returnItem(record.id) }
+                                    onApproveReturn = if (isAdmin && record.status == BorrowStatus.PENDING_RETURN) {
+                                        { viewModel.approveReturn(record.id) }
+                                    } else null,
+                                    onReturn = if (!isAdmin && (record.status == BorrowStatus.ACTIVE ||
+                                        record.status == BorrowStatus.OVERDUE)) {
+                                        { 
+                                            recordToReturn = record.id
+                                            imagePicker.launch() 
+                                        }
                                     } else null
                                 )
                             }
@@ -203,11 +222,13 @@ fun HistoryScreen(
 private fun BorrowRecordCard(
     record: BorrowRecord,
     onApprove: (() -> Unit)? = null,
+    onApproveReturn: (() -> Unit)? = null,
     onReturn: (() -> Unit)? = null
 ) {
     val isOverdue = record.status == BorrowStatus.OVERDUE
     val isReturned = record.status == BorrowStatus.RETURNED
     val isPending = record.status == BorrowStatus.PENDING
+    val isPendingReturn = record.status == BorrowStatus.PENDING_RETURN
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -216,6 +237,7 @@ private fun BorrowRecordCard(
             containerColor = when {
                 isOverdue -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                 isPending -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                isPendingReturn -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
                 isReturned -> MaterialTheme.colorScheme.surfaceVariant
                 else -> MaterialTheme.colorScheme.surface
             }
@@ -233,6 +255,7 @@ private fun BorrowRecordCard(
                         isReturned -> Icons.Default.CheckCircle
                         isOverdue -> Icons.Default.Warning
                         isPending -> Icons.Default.Pending
+                        isPendingReturn -> Icons.AutoMirrored.Filled.AssignmentReturn
                         else -> Icons.Default.History
                     },
                     contentDescription = null,
@@ -240,6 +263,7 @@ private fun BorrowRecordCard(
                         isReturned -> MaterialTheme.colorScheme.secondary
                         isOverdue -> MaterialTheme.colorScheme.error
                         isPending -> MaterialTheme.colorScheme.secondary
+                        isPendingReturn -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier.size(20.dp)
@@ -255,7 +279,7 @@ private fun BorrowRecordCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Peminjam: ${record.borrowerName}",
+                        "Peminjam: ${record.borrowerName} (${record.borrowerDivision})",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -272,9 +296,9 @@ private fun BorrowRecordCard(
                             else MaterialTheme.colorScheme.outline
                         )
                     }
-                    if (isReturned && record.returnDate != null) {
+                    if ((isReturned || isPendingReturn) && record.returnDate != null) {
                         Text(
-                            "Dikembalikan: ${record.returnDate.formatDateOnly()}",
+                            "Tanggal Kembali: ${record.returnDate.formatDateOnly()}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -294,6 +318,7 @@ private fun BorrowRecordCard(
                         isReturned -> MaterialTheme.colorScheme.secondaryContainer
                         isOverdue -> MaterialTheme.colorScheme.errorContainer
                         isPending -> MaterialTheme.colorScheme.tertiaryContainer
+                        isPendingReturn -> MaterialTheme.colorScheme.primaryContainer
                         else -> MaterialTheme.colorScheme.primaryContainer
                     },
                     shape = RoundedCornerShape(6.dp)
@@ -304,6 +329,7 @@ private fun BorrowRecordCard(
                             BorrowStatus.OVERDUE -> "OVERDUE"
                             BorrowStatus.ACTIVE -> "AKTIF"
                             BorrowStatus.PENDING -> "PENDING"
+                            BorrowStatus.PENDING_RETURN -> "MENUNGGU"
                         },
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -311,6 +337,7 @@ private fun BorrowRecordCard(
                             isReturned -> MaterialTheme.colorScheme.onSecondaryContainer
                             isOverdue -> MaterialTheme.colorScheme.error
                             isPending -> MaterialTheme.colorScheme.onTertiaryContainer
+                            isPendingReturn -> MaterialTheme.colorScheme.onPrimaryContainer
                             else -> MaterialTheme.colorScheme.onPrimaryContainer
                         },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -318,7 +345,7 @@ private fun BorrowRecordCard(
                 }
             }
 
-            if (onApprove != null || onReturn != null) {
+            if (onApprove != null || onApproveReturn != null || onReturn != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
@@ -344,7 +371,25 @@ private fun BorrowRecordCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Approve", style = MaterialTheme.typography.labelMedium)
+                            Text("Approve Pinjam", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    if (onApproveReturn != null) {
+                        Button(
+                            onClick = onApproveReturn,
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Konfirmasi Kembali", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     if (onReturn != null) {

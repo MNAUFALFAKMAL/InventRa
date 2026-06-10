@@ -18,12 +18,16 @@ sealed interface HistoryUiState {
 
 class HistoryViewModel(
     private val borrowRepository: BorrowRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val itemRepository: com.example.inventra.domain.repository.ItemRepository
 ) : ViewModel() {
 
     val currentUser: StateFlow<User?> = flow {
         emit(authRepository.getCurrentUser())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading = _isUploading.asStateFlow()
 
     val uiState: StateFlow<HistoryUiState> = combine(
         borrowRepository.getAllRecords(),
@@ -51,9 +55,28 @@ class HistoryViewModel(
         }
     }
 
-    fun returnItem(recordId: Long) {
+    fun approveReturn(recordId: Long) {
         viewModelScope.launch {
-            borrowRepository.returnItem(recordId)
+            borrowRepository.approveReturn(recordId)
+        }
+    }
+
+    fun returnItem(recordId: Long, imageBytes: ByteArray?, fileName: String?) {
+        viewModelScope.launch {
+            if (imageBytes != null && fileName != null) {
+                _isUploading.value = true
+                itemRepository.uploadItemImage(imageBytes, "return_$fileName")
+                    .onSuccess { url ->
+                        borrowRepository.returnItem(recordId, url)
+                        _isUploading.value = false
+                    }
+                    .onFailure {
+                        _isUploading.value = false
+                        // Error handling could be added here
+                    }
+            } else {
+                borrowRepository.returnItem(recordId, null)
+            }
         }
     }
 }

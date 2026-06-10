@@ -58,15 +58,6 @@ fun CatalogScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
                 }
             )
         },

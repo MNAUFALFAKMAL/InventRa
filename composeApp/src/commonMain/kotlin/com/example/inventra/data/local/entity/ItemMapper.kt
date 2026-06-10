@@ -37,6 +37,7 @@ fun BorrowRecordEntity.toDomain(): BorrowRecord {
         dueDate = Instant.fromEpochMilliseconds(due_date),
         returnDate = return_date?.let { Instant.fromEpochMilliseconds(it) },
         status = try { BorrowStatus.valueOf(status) } catch (e: Exception) { BorrowStatus.ACTIVE },
-        fineAmount = fine_amount
+        fineAmount = fine_amount,
+        returnProofUrl = return_proof_url
     )
 }

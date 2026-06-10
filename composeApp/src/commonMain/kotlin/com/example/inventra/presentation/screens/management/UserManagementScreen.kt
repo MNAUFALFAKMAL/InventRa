@@ -22,8 +22,6 @@ import com.example.inventra.domain.model.User
 import com.example.inventra.domain.model.UserDivision
 import com.example.inventra.domain.model.UserRole
 import com.example.inventra.domain.repository.AuthRepository
-import com.example.inventra.domain.repository.BorrowRepository
-import com.example.inventra.domain.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,9 +50,7 @@ data class UserManagementUiState(
 // ==================== VIEWMODEL ====================
 
 class UserManagementViewModel(
-    private val authRepository: AuthRepository,
-    private val itemRepository: ItemRepository,
-    private val borrowRepository: BorrowRepository
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserManagementUiState())
@@ -157,19 +153,6 @@ class UserManagementViewModel(
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
 
-    fun clearAllInventory() {
-        _uiState.update { it.copy(isLoading = true) }
-        viewModelScope.launch {
-            try {
-                itemRepository.deleteAll()
-                borrowRepository.deleteAll()
-                _uiState.update { it.copy(isLoading = false, successMessage = "Berhasil menghapus semua data inventaris") }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "Gagal hapus data: ${e.message}") }
-            }
-        }
-    }
-
     fun editUserName(userId: String, newName: String) {
         viewModelScope.launch {
             authRepository.updateUserName(userId, newName)
@@ -194,7 +177,6 @@ fun UserManagementScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showResetConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let {
@@ -217,11 +199,6 @@ fun UserManagementScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showResetConfirm = true }) {
-                        Icon(Icons.Default.DeleteForever, "Hapus Semua Data", tint = MaterialTheme.colorScheme.error)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -334,21 +311,6 @@ fun UserManagementScreen(
             onPasswordChange = viewModel::onNewPasswordChange,
             onDivisionChange = viewModel::onNewDivisionChange,
             onRoleChange = viewModel::onNewRoleChange
-        )
-    }
-
-    if (showResetConfirm) {
-        AlertDialog(
-            onDismissRequest = { showResetConfirm = false },
-            title = { Text("Hapus Semua Data?") },
-            text = { Text("Tindakan ini akan menghapus seluruh data barang dan riwayat peminjaman secara permanen dari database. Lanjutkan?") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.clearAllInventory(); showResetConfirm = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Hapus Segalanya") }
-            },
-            dismissButton = { TextButton(onClick = { showResetConfirm = false }) { Text("Batal") } }
         )
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -178,6 +179,7 @@ fun ProfileScreen(
 
     val user = uiState.user
     val isAdmin = user?.role == UserRole.ADMIN
+    var showAvatarDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -205,6 +207,23 @@ fun ProfileScreen(
             return@Scaffold
         }
 
+        if (showAvatarDialog && user?.avatarUrl != null) {
+            AlertDialog(
+                onDismissRequest = { showAvatarDialog = false },
+                text = {
+                    AsyncImage(
+                        model = user.avatarUrl,
+                        contentDescription = "Foto Profil Besar",
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAvatarDialog = false }) { Text("Tutup") }
+                }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -218,7 +237,7 @@ fun ProfileScreen(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(96.dp)
+                    modifier = Modifier.size(96.dp).clickable { if (user?.avatarUrl != null) showAvatarDialog = true }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (user?.avatarUrl != null) {
@@ -253,7 +272,7 @@ fun ProfileScreen(
                     }
                 }
             }
-            Text("Tap kamera untuk ganti foto", style = MaterialTheme.typography.labelSmall,
+            Text("Tap foto untuk melihat, tap kamera untuk ganti", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(8.dp))
 

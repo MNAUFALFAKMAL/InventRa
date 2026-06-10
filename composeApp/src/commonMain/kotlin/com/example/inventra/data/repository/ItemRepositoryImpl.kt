@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 class ItemRepositoryImpl(
     private val database: InventRaDatabase
@@ -78,6 +79,10 @@ class ItemRepositoryImpl(
             image_url = item.imageUrl, created_at = now, updated_at = now
         )
         val localId = queries.lastInsertId().executeAsOne()
+        
+        // Reset cooldown agar sync tidak segera menimpa data lokal yang baru dibuat
+        lastSyncTime = now
+
         syncScope.launch {
             try {
                 val response = db["items"].insert(InsertItemDto(
@@ -109,6 +114,10 @@ class ItemRepositoryImpl(
             pic_phone = item.picPhone,
             image_url = item.imageUrl, updated_at = now, id = item.id
         )
+
+        // Reset cooldown agar sync tidak segera menimpa data lokal yang baru diupdate
+        lastSyncTime = now
+
         syncScope.launch {
             try {
                 val targetId = item.remoteId ?: return@launch
@@ -208,7 +217,6 @@ class ItemRepositoryImpl(
                 .decodeList<ItemDto>()
             database.transaction {
                 queries.deleteAll()
-                val now = Clock.System.now().toEpochMilliseconds()
                 remoteItems.forEach { dto ->
                     queries.insertItem(
                         remote_id = dto.id,
@@ -219,7 +227,10 @@ class ItemRepositoryImpl(
                         condition = dto.condition, pic_name = dto.picName,
                         pic_phone = dto.picPhone,
                         image_url = dto.imageUrl,
-                        created_at = now, updated_at = now
+                        created_at = dto.createdAt?.let { Instant.parse(it).toEpochMilliseconds() } 
+                            ?: Clock.System.now().toEpochMilliseconds(),
+                        updated_at = dto.updatedAt?.let { Instant.parse(it).toEpochMilliseconds() } 
+                            ?: Clock.System.now().toEpochMilliseconds()
                     )
                 }
             }

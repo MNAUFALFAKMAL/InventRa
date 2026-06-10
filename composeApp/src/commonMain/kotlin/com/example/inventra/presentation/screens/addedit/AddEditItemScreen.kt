@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +35,7 @@ fun AddEditItemScreen(
 ) {
     val viewModel: AddEditItemViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
 
     // Image picker dari galeri HP — harus di level Composable, bukan di dalam onClick
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
@@ -62,7 +64,10 @@ fun AddEditItemScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.saveItem(onSuccess = onSaveSuccess) },
+                onClick = { 
+                    focusManager.clearFocus()
+                    viewModel.saveItem(onSuccess = onSaveSuccess) 
+                },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 if (uiState.isSaving) {

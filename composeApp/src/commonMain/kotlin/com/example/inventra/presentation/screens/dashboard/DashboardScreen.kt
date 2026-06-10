@@ -108,14 +108,20 @@ private fun DashboardContent(
             .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
         Text(
-            "Dashboard Overview",
-            fontSize = 28.sp, fontWeight = FontWeight.Bold,
+            "InventRa",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            "Dashboard Overview",
+            fontSize = 20.sp, fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.secondary
         )
         Text(
             "Manage your assets and tracking efficiently.",
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
         if (state.overdueItems > 0) {

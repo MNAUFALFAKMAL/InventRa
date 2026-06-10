@@ -14,8 +14,7 @@ data class User(
 
 enum class UserRole(val displayName: String) {
     ADMIN("Admin"),
-    MEMBER("Anggota"),
-    VIEWER("Tamu")
+    MEMBER("Anggota")
 }
 
 enum class UserDivision(val displayName: String) {

@@ -10,7 +10,8 @@ CREATE TABLE BorrowRecordEntity (
     due_date          INTEGER NOT NULL,
     return_date       INTEGER,
     status            TEXT    NOT NULL DEFAULT 'ACTIVE',
-    fine_amount       INTEGER NOT NULL DEFAULT 0
+    fine_amount       INTEGER NOT NULL DEFAULT 0,
+    return_proof_url  TEXT
 );
 
 getAllRecords:
@@ -22,7 +23,7 @@ WHERE status = 'ACTIVE' OR status = 'OVERDUE'
 ORDER BY due_date ASC;
 
 getPendingRecords:
-SELECT * FROM BorrowRecordEntity WHERE status = 'PENDING' ORDER BY borrow_date DESC;
+SELECT * FROM BorrowRecordEntity WHERE status = 'PENDING' OR status = 'PENDING_RETURN' ORDER BY borrow_date DESC;
 
 getRecordById:
 SELECT * FROM BorrowRecordEntity WHERE id = ?;
@@ -32,8 +33,8 @@ SELECT * FROM BorrowRecordEntity WHERE remote_id = ?;
 
 insertRecord:
 INSERT INTO BorrowRecordEntity
-    (remote_id, item_id, borrower_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (remote_id, item_id, borrower_id, item_name, borrower_name, borrower_division, borrow_date, due_date, return_date, status, fine_amount, return_proof_url)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();
@@ -43,7 +44,7 @@ UPDATE BorrowRecordEntity SET remote_id = ? WHERE id = ?;
 
 updateRecordStatus:
 UPDATE BorrowRecordEntity
-SET status = ?, return_date = ?, fine_amount = ?
+SET status = ?, return_date = ?, fine_amount = ?, return_proof_url = ?
 WHERE id = ?;
 
 updateStatus:

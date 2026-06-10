@@ -158,54 +158,52 @@ class AIInventoryViewModel(
                 Lakukan analisis mendalam terhadap kondisi stok inventaris di atas.
                 
                 Sertakan dalam analisis:
-                1. **Ringkasan Kondisi** — overview total item, stok tersedia vs dipinjam
-                2. **Item Kritis** — barang dengan stok rendah atau kondisi buruk
-                3. **Distribusi Kategori** — apakah ada kategori yang kurang terwakili?
-                4. **Kesehatan Inventaris** — penilaian keseluruhan (Baik/Perlu Perhatian/Kritis)
-                5. **Rekomendasi Prioritas** — 3 tindakan utama yang perlu dilakukan
+                1. Ringkasan Kondisi — overview total item, stok tersedia vs dipinjam
+                2. Item Kritis — barang dengan stok rendah atau kondisi buruk
+                3. Distribusi Kategori — apakah ada kategori yang kurang terwakili?
+                4. Kesehatan Inventaris — penilaian keseluruhan (Baik/Perlu Perhatian/Kritis)
+                5. Rekomendasi Prioritas — 3 tindakan utama yang perlu dilakukan
                 
-                Format jawaban dengan header yang jelas dan poin-poin terstruktur.
+                Gunakan bahasa yang santai tapi sopan seperti asisten AI pada umumnya. Jangan gunakan terlalu banyak simbol Markdown seperti triple hash atau bold berlebihan. Cukup gunakan paragraf dan list sederhana agar mudah dibaca.
             """.trimIndent()
 
             InventoryAIAction.SUGGEST_PROCUREMENT -> """
                 Berdasarkan data inventaris di atas, berikan saran pengadaan barang.
                 
                 Analisis dan rekomendasikan:
-                1. **Barang yang Habis/Kritis** — item yang stoknya menipis dan perlu segera diadakan
-                2. **Barang Baru yang Disarankan** — berdasarkan kategori yang ada, apa yang mungkin dibutuhkan HMIF?
-                3. **Prioritas Pengadaan** — urutkan dari paling mendesak
-                4. **Estimasi Kebutuhan** — berapa unit yang disarankan untuk diadakan
-                5. **Tips Pengelolaan** — saran untuk menjaga ketersediaan stok
+                1. Barang yang Habis/Kritis — item yang stoknya menipis dan perlu segera diadakan
+                2. Barang Baru yang Disarankan — berdasarkan kategori yang ada, apa yang mungkin dibutuhkan HMIF?
+                3. Prioritas Pengadaan — urutkan dari paling mendesak
+                4. Estimasi Kebutuhan — berapa unit yang disarankan untuk diadakan
+                5. Tips Pengelolaan — saran untuk menjaga ketersediaan stok
                 
-                Pertimbangkan konteks sebagai organisasi mahasiswa yang memiliki keterbatasan anggaran.
+                Gunakan bahasa yang santai tapi sopan seperti asisten AI pada umumnya. Jangan gunakan terlalu banyak simbol Markdown. Cukup gunakan paragraf dan list sederhana agar mudah dibaca.
             """.trimIndent()
 
             InventoryAIAction.BORROWING_REPORT -> """
                 Buat laporan dan analisis peminjaman berdasarkan data di atas.
                 
                 Laporan harus mencakup:
-                1. **Statistik Peminjaman** — total aktif, selesai, overdue
-                2. **Pola Peminjaman** — barang apa yang paling sering dipinjam?
-                3. **Status Overdue** — daftar dan kondisi peminjaman yang terlambat
-                4. **Analisis Peminjam** — siapa yang paling sering meminjam?
-                5. **Rekomendasi Kebijakan** — saran untuk meningkatkan disiplin pengembalian
-                6. **Ringkasan Denda** — total potensi denda dari overdue
+                1. Statistik Peminjaman — total aktif, selesai, overdue
+                2. Pola Peminjaman — barang apa yang paling sering dipinjam?
+                3. Status Overdue — daftar dan kondisi peminjaman yang terlambat
+                4. Analisis Peminjam — siapa yang paling sering meminjam?
+                5. Rekomendasi Kebijakan — saran untuk meningkatkan disiplin pengembalian
                 
-                Sampaikan dengan format yang mudah dipresentasikan ke rapat organisasi.
+                Gunakan bahasa yang santai tapi sopan seperti asisten AI pada umumnya. Jangan gunakan format yang kaku seperti README.
             """.trimIndent()
 
             InventoryAIAction.OVERDUE_ACTION -> """
                 Berikan panduan tindakan untuk menangani peminjaman overdue berdasarkan data di atas.
                 
                 Sertakan:
-                1. **Daftar Overdue** — semua peminjaman yang melewati batas waktu
-                2. **Prioritas Penagihan** — urutkan berdasarkan lama keterlambatan
-                3. **Template Pesan** — contoh pesan notifikasi yang sopan tapi tegas
-                4. **Prosedur Penanganan** — langkah-langkah yang disarankan
-                5. **Perhitungan Denda** — estimasi denda berdasarkan aturan (Rp 10.000/hari)
-                6. **Pencegahan ke Depan** — saran agar overdue berkurang di masa mendatang
+                1. Daftar Overdue — semua peminjaman yang melewati batas waktu
+                2. Prioritas Penagihan — urutkan berdasarkan lama keterlambatan
+                3. Template Pesan — contoh pesan notifikasi yang sopan tapi tegas
+                4. Prosedur Penanganan — langkah-langkah yang disarankan
+                5. Perhitungan Denda — estimasi denda berdasarkan aturan (Rp 10.000/hari)
                 
-                Tone: profesional dan tegas namun tetap collegial sesama mahasiswa.
+                Gunakan bahasa yang santai tapi sopan seperti asisten AI pada umumnya.
             """.trimIndent()
 
             InventoryAIAction.CUSTOM_QUERY -> """

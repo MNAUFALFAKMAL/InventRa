@@ -36,6 +36,7 @@ data class BorrowRecordDto(
     @SerialName("return_date") val returnDate: String? = null,
     val status: String = "PENDING",
     @SerialName("fine_amount") val fineAmount: Long = 0,
+    @SerialName("return_proof_url") val returnProofUrl: String? = null,
     @SerialName("admin_note") val adminNote: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null

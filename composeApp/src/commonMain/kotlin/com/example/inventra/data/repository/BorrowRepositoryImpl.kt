@@ -95,6 +95,10 @@ class BorrowRepositoryImpl(
 
         // 2. Kurangi available_stock SEGERA (HANYA LOKAL)
         val now = Clock.System.now().toEpochMilliseconds()
+        
+        // Reset cooldown
+        lastSyncTime = now
+
         val existingItem = database.itemQueries.getItemById(record.itemId).executeAsOneOrNull()
         try {
             if (existingItem != null && existingItem.available_stock > 0) {
@@ -159,7 +163,7 @@ class BorrowRepositoryImpl(
         return localId
     }
 
-    override suspend fun returnItem(recordId: Long) {
+    override suspend fun returnItem(recordId: Long, proofImageUrl: String?) {
         val returnDate = Clock.System.now()
         val record = queries.getRecordById(recordId).executeAsOneOrNull() ?: return
 
@@ -171,13 +175,42 @@ class BorrowRepositoryImpl(
         } else 0L
 
         queries.updateRecordStatus(
-            status = BorrowStatus.RETURNED.name,
+            status = BorrowStatus.PENDING_RETURN.name,
             return_date = returnDate.toEpochMilliseconds(),
             fine_amount = fineAmount,
+            return_proof_url = proofImageUrl,
             id = recordId
         )
 
-        // Kembalikan stok lokal
+        // Reset cooldown agar sync tidak menimpa perubahan lokal yang baru saja dibuat
+        lastSyncTime = Clock.System.now().toEpochMilliseconds()
+
+        // Catatan: Stok belum dikembalikan ke item sampai Admin Approve pengembalian ini.
+
+        syncScope.launch {
+            try {
+                val targetId = record.remote_id ?: return@launch
+                val updateData = buildJsonObject {
+                    put("status", BorrowStatus.PENDING_RETURN.name)
+                    put("fine_amount", fineAmount)
+                    put("return_date", returnDate.toString())
+                    if (proofImageUrl != null) put("return_proof_url", proofImageUrl)
+                }
+                adminDb["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
+                lastSyncTime = 0
+            } catch (e: Exception) {
+                println("RETURN Supabase sync gagal: ${e.message}")
+            }
+        }
+    }
+
+    override suspend fun approveReturn(recordId: Long) {
+        val record = queries.getRecordById(recordId).executeAsOneOrNull() ?: return
+        
+        // 1. Update status jadi RETURNED
+        queries.updateStatus(status = BorrowStatus.RETURNED.name, id = recordId)
+        
+        // 2. Kembalikan stok lokal
         try {
             val existingItem = database.itemQueries.getItemById(record.item_id).executeAsOneOrNull()
             if (existingItem != null) {
@@ -189,24 +222,20 @@ class BorrowRepositoryImpl(
                 )
             }
         } catch (e: Exception) {
-            println("RETURN: update stok gagal: ${e.message}")
+            println("APPROVE_RETURN: update stok lokal gagal: ${e.message}")
         }
 
-        // Reset cooldown
-        lastSyncTime = Clock.System.now().toEpochMilliseconds() + SYNC_COOLDOWN_MS
+        lastSyncTime = Clock.System.now().toEpochMilliseconds()
 
         syncScope.launch {
             try {
                 val targetId = record.remote_id ?: return@launch
                 val updateData = buildJsonObject {
                     put("status", BorrowStatus.RETURNED.name)
-                    put("fine_amount", fineAmount)
-                    put("return_date", returnDate.toString())
                 }
-                // Gunakan adminDb agar member tetap bisa mengupdate status dan stok
                 adminDb["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
 
-                // FIX: Kembalikan stok di Supabase juga
+                // Kembalikan stok di Supabase
                 val existingItem = database.itemQueries.getItemById(record.item_id).executeAsOneOrNull()
                 val remoteItemId = existingItem?.remote_id
                 if (remoteItemId != null) {
@@ -218,13 +247,11 @@ class BorrowRepositoryImpl(
                         adminDb["items"].update(buildJsonObject {
                             put("available_stock", newStock)
                         }) { filter { eq("id", remoteItemId) } }
-                        println("RETURN Supabase: stok berhasil dikembalikan ke $newStock (via Admin API)")
                     }
                 }
-                // Force sync agar dashboard terupdate
                 lastSyncTime = 0
             } catch (e: Exception) {
-                println("RETURN Supabase sync gagal: ${e.message}")
+                println("APPROVE_RETURN Supabase sync gagal: ${e.message}")
             }
         }
     }
