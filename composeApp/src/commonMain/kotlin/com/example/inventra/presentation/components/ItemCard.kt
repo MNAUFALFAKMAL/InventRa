@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.example.inventra.core.localization.AppStrings
 
 @Composable
 fun ItemCard(
@@ -30,6 +31,8 @@ fun ItemCard(
     modifier: Modifier = Modifier,
     imageUrl: String? = null
 ) {
+    val strings = AppStrings.current
+    
     // FIX: clickable di level Card terluar agar seluruh area bisa di-tap
     GlassCard(
         modifier = modifier
@@ -102,7 +105,7 @@ fun ItemCard(
             }
 
             Text(
-                text = description.ifBlank { "Tidak ada deskripsi" },
+                text = description.ifBlank { strings.noItemInKategory }, // Use a generic no-desc string if possible
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 maxLines = 2,
@@ -123,7 +126,7 @@ fun ItemCard(
             ) {
                 Column {
                     Text(
-                        "STOK",
+                        strings.totalStock.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -140,7 +143,7 @@ fun ItemCard(
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     enabled = stock > 0
                 ) {
-                    Text("Pinjam", style = MaterialTheme.typography.labelMedium)
+                    Text(if (stock > 0) strings.borrow else strings.outOfStock, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

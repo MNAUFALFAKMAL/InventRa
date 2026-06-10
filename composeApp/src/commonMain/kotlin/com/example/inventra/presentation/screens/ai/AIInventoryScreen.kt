@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.presentation.components.InventRaBottomNav
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -28,13 +29,14 @@ fun AIInventoryScreen(
 ) {
     val viewModel: AIInventoryViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val strings = AppStrings.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "AI Inventory Assistant",
+                        strings.aiInventoryAssistant,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -75,7 +77,7 @@ fun AIInventoryScreen(
                     FilterChip(
                         selected = uiState.selectedAction == action,
                         onClick = { viewModel.onActionSelected(action) },
-                        label = { Text(action.displayName) },
+                        label = { Text(action.getDisplayName(strings)) },
                         shape = RoundedCornerShape(50)
                     )
                 }
@@ -92,7 +94,7 @@ fun AIInventoryScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = uiState.selectedAction.description,
+                    text = uiState.selectedAction.getDescription(strings),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(12.dp)
@@ -104,7 +106,7 @@ fun AIInventoryScreen(
                 OutlinedTextField(
                     value = uiState.inputText,
                     onValueChange = viewModel::onInputTextChange,
-                    placeholder = { Text(uiState.selectedAction.inputHint) },
+                    placeholder = { Text(strings.aiCustomQueryHint) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -115,7 +117,7 @@ fun AIInventoryScreen(
 
             // Tombol Execute
             Button(
-                onClick = { viewModel.executeAction() },
+                onClick = { viewModel.executeAction(strings) },
                 enabled = uiState.canExecute,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -130,11 +132,11 @@ fun AIInventoryScreen(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Memproses...")
+                    Text(strings.processing)
                 } else {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Jalankan Analisis")
+                    Text(strings.runAnalysis)
                 }
             }
 
@@ -168,7 +170,7 @@ fun AIInventoryScreen(
                 ) {
                     item {
                         Text(
-                            "Hasil Analisis",
+                            strings.analysisResult,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.secondary
@@ -208,7 +210,7 @@ fun AIInventoryScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "Pilih aksi di atas lalu tekan\n\"Jalankan Analisis\"",
+                            strings.aiEmptyState,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
                             textAlign = TextAlign.Center

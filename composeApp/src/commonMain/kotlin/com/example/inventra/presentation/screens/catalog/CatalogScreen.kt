@@ -16,12 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.presentation.components.CategoryChip
 import com.example.inventra.presentation.components.EmptyState
 import com.example.inventra.presentation.components.InventRaBottomNav
 import com.example.inventra.presentation.components.ItemCard
 import com.example.inventra.presentation.components.LoadingIndicator
+import com.example.inventra.presentation.util.getDisplayName
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,24 +39,31 @@ fun CatalogScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
+    val strings = AppStrings.current
 
     val categories = listOf(
-        "Semua" to ItemCategory.ALL,
-        "Medis" to ItemCategory.MEDICAL,
-        "Elektronik" to ItemCategory.ELECTRONICS,
-        "Bendera" to ItemCategory.FLAG,
-        "Konsumsi" to ItemCategory.FOOD,
-        "Lainnya" to ItemCategory.OTHER
+        strings.catAll to ItemCategory.ALL,
+        strings.catMedical to ItemCategory.MEDICAL,
+        strings.catElectronics to ItemCategory.ELECTRONICS,
+        strings.catFlag to ItemCategory.FLAG,
+        strings.catFood to ItemCategory.FOOD,
+        strings.catOther to ItemCategory.OTHER
     )
 
-    var selectedCategoryLabel by remember { mutableStateOf("Semua") }
+    var selectedCategoryLabel by remember { mutableStateOf(strings.catAll) }
+    
+    // Update label if language changes or state changes
+    val currentSelectedCategory = (uiState as? CatalogUiState.Success)?.selectedCategory ?: ItemCategory.ALL
+    LaunchedEffect(strings, currentSelectedCategory) {
+        selectedCategoryLabel = categories.find { it.second == currentSelectedCategory }?.first ?: strings.catAll
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Katalog Barang",
+                        strings.catalog,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -86,7 +95,7 @@ fun CatalogScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                placeholder = { Text("Cari barang...") },
+                placeholder = { Text(strings.searchItem) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -121,8 +130,8 @@ fun CatalogScreen(
 
                 is CatalogUiState.Empty -> {
                     EmptyState(
-                        title = "Tidak Ada Barang",
-                        description = "Belum ada barang dalam kategori ini"
+                        title = strings.noItemFound,
+                        description = strings.noItemInKategory
                     )
                 }
 
@@ -146,18 +155,15 @@ fun CatalogScreen(
                         items(state.items) { item ->
                             ItemCard(
                                 title = item.name,
-                                category = item.category.displayName,
+                                category = item.category.getDisplayName(strings),
                                 description = item.description,
                                 stock = item.availableStock,
                                 isAvailable = item.isBorrowable,
                                 imageUrl = item.imageUrl,
-                                // FIX: gunakan item.id bukan item.name
                                 onClick = {
-                                    println("DEBUG CatalogScreen: tap item id=${item.id} name=${item.name}")
                                     onNavigateToDetail(item.id)
                                 },
                                 onBorrowClick = {
-                                    println("DEBUG CatalogScreen: borrow tap item id=${item.id}")
                                     onNavigateToDetail(item.id)
                                 }
                             )

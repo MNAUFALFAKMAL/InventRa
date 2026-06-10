@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.presentation.components.EmptyState
@@ -33,6 +34,7 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
+    val strings = AppStrings.current
     
     var showImageSourceOptions by remember { mutableStateOf(false) }
     var recordToReturn by remember { mutableStateOf<Long?>(null) }
@@ -49,14 +51,14 @@ fun HistoryScreen(
                 showImageSourceOptions = false
                 recordToReturn = null 
             },
-            title = { Text("Bukti Pengembalian") },
-            text = { Text("Ambil foto bukti pengembalian atau pilih dari galeri.") },
+            title = { Text(strings.returnProofTitle) },
+            text = { Text(strings.returnProofDesc) },
             confirmButton = {
                 TextButton(onClick = {
                     showImageSourceOptions = false
                     imagePicker.takePhoto()
                 }) {
-                    Text("Kamera")
+                    Text(strings.camera)
                 }
             },
             dismissButton = {
@@ -64,21 +66,21 @@ fun HistoryScreen(
                     showImageSourceOptions = false
                     imagePicker.pickImage()
                 }) {
-                    Text("Galeri")
+                    Text(strings.gallery)
                 }
             }
         )
     }
 
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Pending", "Aktif", "Semua")
+    val tabs = listOf(strings.pending, strings.active, strings.all)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Peminjaman",
+                        strings.borrowing,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -117,8 +119,8 @@ fun HistoryScreen(
 
                 is HistoryUiState.Empty -> {
                     EmptyState(
-                        title = "Belum Ada Riwayat",
-                        description = "Belum ada transaksi peminjaman yang tercatat."
+                        title = strings.noHistoryTitle,
+                        description = strings.noHistoryDesc
                     )
                 }
 
@@ -156,12 +158,12 @@ fun HistoryScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        "$overdueCount item overdue!",
+                                        "$overdueCount ${strings.overdueAlert}",
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleSmall
                                     )
                                     Text(
-                                        "Segera tindak lanjuti.",
+                                        strings.takeAction,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -194,7 +196,7 @@ fun HistoryScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "$pendingCount permintaan/pengembalian menunggu persetujuan Admin.",
+                                        "$pendingCount ${strings.pendingActionDesc}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
@@ -205,11 +207,15 @@ fun HistoryScreen(
 
                     if (displayedRecords.isEmpty()) {
                         EmptyState(
-                            title = "Tidak Ada Data",
+                            title = when (selectedTab) {
+                                0 -> strings.noPendingTitle
+                                1 -> strings.noActiveTitle
+                                else -> strings.noHistoryTitle
+                            },
                             description = when (selectedTab) {
-                                0 -> "Tidak ada permintaan pending saat ini."
-                                1 -> "Tidak ada peminjaman aktif saat ini."
-                                else -> "Belum ada riwayat peminjaman."
+                                0 -> strings.noPendingDesc
+                                1 -> strings.noActiveDesc
+                                else -> strings.noHistoryDesc
                             }
                         )
                     } else {
@@ -257,6 +263,7 @@ private fun BorrowRecordCard(
     val isReturned = record.status == BorrowStatus.RETURNED
     val isPending = record.status == BorrowStatus.PENDING
     val isPendingReturn = record.status == BorrowStatus.PENDING_RETURN
+    val strings = AppStrings.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -307,7 +314,7 @@ private fun BorrowRecordCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Peminjam: ${record.borrowerName} (${record.borrowerDivision})",
+                        "${strings.borrower}: ${record.borrowerName} (${record.borrowerDivision})",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -318,7 +325,7 @@ private fun BorrowRecordCard(
                     )
                     if (!isPending) {
                         Text(
-                            "Jatuh tempo: ${record.dueDate.formatDateOnly()}",
+                            "${strings.dueDate}: ${record.dueDate.formatDateOnly()}",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isOverdue) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.outline
@@ -326,14 +333,14 @@ private fun BorrowRecordCard(
                     }
                     if ((isReturned || isPendingReturn) && record.returnDate != null) {
                         Text(
-                            "Tanggal Kembali: ${record.returnDate.formatDateOnly()}",
+                            "${strings.returnDate}: ${record.returnDate.formatDateOnly()}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
                     if (record.fineAmount > 0) {
                         Text(
-                            "Denda: Rp ${record.fineAmount.toLocaleString()}",
+                            "${strings.fine}: Rp ${record.fineAmount.toLocaleString()}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -353,11 +360,11 @@ private fun BorrowRecordCard(
                 ) {
                     Text(
                         text = when (record.status) {
-                            BorrowStatus.RETURNED -> "SELESAI"
-                            BorrowStatus.OVERDUE -> "OVERDUE"
-                            BorrowStatus.ACTIVE -> "AKTIF"
-                            BorrowStatus.PENDING -> "PENDING"
-                            BorrowStatus.PENDING_RETURN -> "MENUNGGU"
+                            BorrowStatus.RETURNED -> strings.returned
+                            BorrowStatus.OVERDUE -> strings.overdue
+                            BorrowStatus.ACTIVE -> strings.active
+                            BorrowStatus.PENDING -> strings.pending
+                            BorrowStatus.PENDING_RETURN -> strings.waitingApproval
                         },
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -399,7 +406,7 @@ private fun BorrowRecordCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Approve Pinjam", style = MaterialTheme.typography.labelMedium)
+                            Text(strings.approveBorrow, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     if (onApproveReturn != null) {
@@ -417,7 +424,7 @@ private fun BorrowRecordCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Konfirmasi Kembali", style = MaterialTheme.typography.labelMedium)
+                            Text(strings.approveReturn, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     if (onReturn != null) {
@@ -433,7 +440,7 @@ private fun BorrowRecordCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Kembalikan", style = MaterialTheme.typography.labelMedium)
+                            Text(strings.returnItem, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

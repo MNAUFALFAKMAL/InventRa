@@ -22,6 +22,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.inventra.core.localization.AppStrings
+import com.example.inventra.core.localization.Language
+import com.example.inventra.core.localization.LocalLanguage
+import com.example.inventra.core.localization.Strings
 import com.example.inventra.core.util.rememberImagePickerLauncher
 import com.example.inventra.domain.model.User
 import com.example.inventra.domain.model.UserRole
@@ -55,7 +59,8 @@ data class ProfileUiState(
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val itemRepository: com.example.inventra.domain.repository.ItemRepository,
-    private val borrowRepository: com.example.inventra.domain.repository.BorrowRepository
+    private val borrowRepository: com.example.inventra.domain.repository.BorrowRepository,
+    private val userPreferences: com.example.inventra.data.local.datastore.UserPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -63,15 +68,27 @@ class ProfileViewModel(
 
     init { loadProfile() }
 
-    fun resetAllData() {
+    fun setDarkMode(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setDarkMode(enabled)
+        }
+    }
+
+    fun setLanguage(language: Language) {
+        viewModelScope.launch {
+            userPreferences.setLanguage(language.code)
+        }
+    }
+
+    fun resetAllData(strings: Strings) {
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
                 itemRepository.deleteAll()
                 borrowRepository.deleteAll()
-                _uiState.update { it.copy(isSaving = false, successMessage = "Data berhasil direset") }
+                _uiState.update { it.copy(isSaving = false, successMessage = strings.resetDataSuccess) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false, error = "Gagal reset data: ${e.message}") }
+                _uiState.update { it.copy(isSaving = false, error = "${strings.resetDataError}: ${e.message}") }
             }
         }
     }
@@ -112,7 +129,7 @@ class ProfileViewModel(
     fun onNameChange(v: String) = _uiState.update { it.copy(editName = v) }
     fun onPhoneChange(v: String) = _uiState.update { it.copy(editPhone = v) }
 
-    fun uploadAvatar(bytes: ByteArray, fileName: String) {
+    fun uploadAvatar(bytes: ByteArray, fileName: String, strings: Strings) {
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             authRepository.updateAvatar(bytes, fileName)
@@ -121,7 +138,7 @@ class ProfileViewModel(
                         it.copy(
                             isSaving = false,
                             user = it.user?.copy(avatarUrl = url),
-                            successMessage = "Foto profil diperbarui"
+                            successMessage = strings.profilePhotoUpdated
                         )
                     }
                     loadProfile() // Re-fetch to ensure sync
@@ -132,7 +149,7 @@ class ProfileViewModel(
         }
     }
 
-    fun saveProfile() {
+    fun saveProfile(strings: Strings) {
         val state = _uiState.value
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
@@ -141,7 +158,7 @@ class ProfileViewModel(
                 phone = state.editPhone.ifBlank { null },
                 avatarUrl = null
             ).onSuccess { user ->
-                _uiState.update { it.copy(isSaving = false, isEditMode = false, user = user, successMessage = "Profil diperbarui") }
+                _uiState.update { it.copy(isSaving = false, isEditMode = false, user = user, successMessage = strings.profileUpdated) }
                 loadProfile() // Re-fetch
                 loadDivisionMembers(user)
             }.onFailure { e ->
@@ -166,24 +183,26 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDarkTheme = LocalThemeIsDark.current
+    val currentLanguage = LocalLanguage.current
+    val strings = AppStrings.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showImageSourceOptions by remember { mutableStateOf(false) }
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
-        viewModel.uploadAvatar(bytes, fileName)
+        viewModel.uploadAvatar(bytes, fileName, strings)
     }
 
     if (showImageSourceOptions) {
         AlertDialog(
             onDismissRequest = { showImageSourceOptions = false },
-            title = { Text("Pilih Sumber Foto") },
-            text = { Text("Ambil foto dari kamera atau pilih dari galeri.") },
+            title = { Text(strings.choosePhotoSource) },
+            text = { Text(strings.choosePhotoSourceDesc) },
             confirmButton = {
                 TextButton(onClick = {
                     showImageSourceOptions = false
                     imagePicker.takePhoto()
                 }) {
-                    Text("Kamera")
+                    Text(strings.camera)
                 }
             },
             dismissButton = {
@@ -191,7 +210,7 @@ fun ProfileScreen(
                     showImageSourceOptions = false
                     imagePicker.pickImage()
                 }) {
-                    Text("Galeri")
+                    Text(strings.gallery)
                 }
             }
         )
@@ -210,11 +229,11 @@ fun ProfileScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Profil Saya", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = { Text(strings.myProfile, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 actions = {
                     if (!uiState.isEditMode) {
                         IconButton(onClick = viewModel::enterEditMode) {
-                            Icon(Icons.Default.Edit, "Edit Profil")
+                            Icon(Icons.Default.Edit, strings.editProfile)
                         }
                     }
                 },
@@ -244,7 +263,7 @@ fun ProfileScreen(
                     )
                 },
                 confirmButton = {
-                    TextButton(onClick = { showAvatarDialog = false }) { Text("Tutup") }
+                    TextButton(onClick = { showAvatarDialog = false }) { Text(strings.close) }
                 }
             )
         }
@@ -291,14 +310,12 @@ fun ProfileScreen(
                         if (uiState.isSaving) {
                             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
                         } else {
-                            Icon(Icons.Default.CameraAlt, "Ganti Foto", tint = Color.White,
+                            Icon(Icons.Default.CameraAlt, strings.changePhoto, tint = Color.White,
                                 modifier = Modifier.size(18.dp))
                         }
                     }
                 }
             }
-            Text("Tap foto untuk melihat, tap kamera untuk ganti", style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(8.dp))
 
             // ── Nama & Role ────────────────────────────────────────────────
@@ -333,22 +350,22 @@ fun ProfileScreen(
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Edit Profil", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(strings.editProfile, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(value = uiState.editName, onValueChange = viewModel::onNameChange,
-                            label = { Text("Nama Lengkap") }, singleLine = true,
+                            label = { Text(strings.fullName) }, singleLine = true,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = uiState.editPhone, onValueChange = viewModel::onPhoneChange,
-                            label = { Text("Nomor HP") }, singleLine = true,
+                            label = { Text(strings.phoneNumber) }, singleLine = true,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = viewModel::exitEditMode, modifier = Modifier.weight(1f)) { Text("Batal") }
-                            Button(onClick = viewModel::saveProfile, modifier = Modifier.weight(1f),
+                            OutlinedButton(onClick = viewModel::exitEditMode, modifier = Modifier.weight(1f)) { Text(strings.cancel) }
+                            Button(onClick = { viewModel.saveProfile(strings) }, modifier = Modifier.weight(1f),
                                 enabled = !uiState.isSaving) {
                                 if (uiState.isSaving) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                                else Text("Simpan")
+                                else Text(strings.save)
                             }
                         }
                     }
@@ -360,7 +377,8 @@ fun ProfileScreen(
             DivisionInfoCard(
                 divisionName = user?.division?.displayName ?: "",
                 members = uiState.divisionMembers,
-                isLoading = uiState.isLoadingMembers
+                isLoading = uiState.isLoadingMembers,
+                strings = strings
             )
             Spacer(Modifier.height(16.dp))
 
@@ -368,8 +386,10 @@ fun ProfileScreen(
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Pengaturan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    Text(strings.settings, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp))
+                    
+                    // Dark Mode
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween) {
@@ -378,13 +398,69 @@ fun ProfileScreen(
                                 null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text("Tema Gelap", style = MaterialTheme.typography.titleSmall)
-                                Text(if (isDarkTheme.value) "Aktif" else "Nonaktif",
+                                Text(strings.darkMode, style = MaterialTheme.typography.titleSmall)
+                                Text(if (isDarkTheme.value) strings.darkThemeActive else strings.darkThemeInactive,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.outline)
                             }
                         }
-                        Switch(checked = isDarkTheme.value, onCheckedChange = { isDarkTheme.value = it })
+                        Switch(checked = isDarkTheme.value, onCheckedChange = { 
+                            isDarkTheme.value = it
+                            viewModel.setDarkMode(it)
+                        })
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    // Language Selection
+                    var showLanguageDialog by remember { mutableStateOf(false) }
+                    if (showLanguageDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showLanguageDialog = false },
+                            title = { Text(strings.changeLanguage) },
+                            text = {
+                                Column {
+                                    Language.entries.forEach { lang ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    viewModel.setLanguage(lang)
+                                                    showLanguageDialog = false
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = currentLanguage.value == lang,
+                                                onClick = null
+                                            )
+                                            Spacer(Modifier.width(12.dp))
+                                            Text(lang.displayName)
+                                        }
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showLanguageDialog = false }) { Text(strings.close) }
+                            }
+                        )
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth().clickable { showLanguageDialog = true }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Language, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(strings.language, style = MaterialTheme.typography.titleSmall)
+                                Text(currentLanguage.value.displayName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline)
+                            }
+                        }
+                        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.outline)
                     }
                 }
             }
@@ -396,19 +472,19 @@ fun ProfileScreen(
                 if (showResetDialog) {
                     AlertDialog(
                         onDismissRequest = { showResetDialog = false },
-                        title = { Text("Reset Semua Data") },
-                        text = { Text("Yakin hapus semua item & riwayat peminjaman? Tidak bisa dibatalkan.") },
+                        title = { Text(strings.confirmResetTitle) },
+                        text = { Text(strings.confirmResetMessage) },
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     showResetDialog = false
-                                    viewModel.resetAllData()
+                                    viewModel.resetAllData(strings)
                                 },
                                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                            ) { Text("Hapus Semua", fontWeight = FontWeight.Bold) }
+                            ) { Text(strings.resetAllData, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showResetDialog = false }) { Text("Batal") }
+                            TextButton(onClick = { showResetDialog = false }) { Text(strings.cancel) }
                         }
                     )
                 }
@@ -422,9 +498,9 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Manajemen Akun", style = MaterialTheme.typography.titleSmall,
+                            Text(strings.accountManagement, style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                            Text("Buat dan kelola akun anggota divisi",
+                            Text(strings.createAndManageAccountDesc,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
                         }
@@ -443,9 +519,9 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Reset Semua Data", style = MaterialTheme.typography.titleSmall,
+                            Text(strings.resetAllData, style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
-                            Text("Hapus seluruh item dan riwayat peminjaman",
+                            Text(strings.resetDataDesc,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f))
                         }
@@ -463,7 +539,7 @@ fun ProfileScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
                 Icon(Icons.AutoMirrored.Filled.Logout, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Logout Akun", fontWeight = FontWeight.Bold)
+                Text(strings.logout, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -473,7 +549,7 @@ fun ProfileScreen(
 // ── Division Info Card ────────────────────────────────────────────────────────
 
 @Composable
-private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoading: Boolean) {
+private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoading: Boolean, strings: Strings) {
     if (divisionName.isBlank()) return
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -490,7 +566,7 @@ private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoadin
                     CircularProgressIndicator(Modifier.size(24.dp))
                 }
             } else if (members.isEmpty()) {
-                Text("Belum ada anggota terdaftar.", style = MaterialTheme.typography.bodySmall,
+                Text(strings.noMembers, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline)
             } else {
                 val admins = members.filter { it.role == UserRole.ADMIN }
@@ -507,7 +583,7 @@ private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoadin
                             }
                             Spacer(Modifier.width(10.dp))
                             Column {
-                                Text("Admin / Kepala", style = MaterialTheme.typography.labelSmall,
+                                Text(strings.adminHead, style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
                                 Text(admin.name, style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
@@ -518,7 +594,7 @@ private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoadin
                     Spacer(Modifier.height(8.dp))
                 }
                 if (regular.isNotEmpty()) {
-                    Text("Anggota (${regular.size})", style = MaterialTheme.typography.labelMedium,
+                    Text("${strings.members} (${regular.size})", style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(bottom = 4.dp))
                     regular.forEachIndexed { index, member ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {

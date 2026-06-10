@@ -3,6 +3,7 @@ package com.example.inventra.presentation.screens.ai
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.inventra.core.localization.Strings
 import com.example.inventra.domain.model.Item
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.repository.AIRepository
@@ -39,33 +40,29 @@ sealed interface AIInventoryEvent {
 // ==================== AI ACTIONS ====================
 
 enum class InventoryAIAction(
-    val displayName: String,
-    val description: String,
-    val needsInput: Boolean = false,
-    val inputHint: String = ""
+    val needsInput: Boolean = false
 ) {
-    ANALYZE_STOCK(
-        displayName = "Analisis Stok",
-        description = "Analisis kondisi stok inventaris saat ini dan berikan rekomendasi"
-    ),
-    SUGGEST_PROCUREMENT(
-        displayName = "Saran Pengadaan",
-        description = "Dapatkan saran barang apa yang perlu diadakan berdasarkan data"
-    ),
-    BORROWING_REPORT(
-        displayName = "Laporan Peminjaman",
-        description = "Ringkasan dan analisis pola peminjaman barang"
-    ),
-    OVERDUE_ACTION(
-        displayName = "Tindak Overdue",
-        description = "Saran tindakan untuk barang yang terlambat dikembalikan"
-    ),
-    CUSTOM_QUERY(
-        displayName = "Tanya Bebas",
-        description = "Tanyakan apapun tentang inventaris Anda",
-        needsInput = true,
-        inputHint = "Contoh: Barang apa yang paling sering dipinjam? Apa saran untuk meningkatkan pengelolaan?"
-    )
+    ANALYZE_STOCK,
+    SUGGEST_PROCUREMENT,
+    BORROWING_REPORT,
+    OVERDUE_ACTION,
+    CUSTOM_QUERY(needsInput = true);
+    
+    fun getDisplayName(strings: Strings): String = when(this) {
+        ANALYZE_STOCK -> strings.aiAnalyzeStock
+        SUGGEST_PROCUREMENT -> strings.aiSuggestProcurement
+        BORROWING_REPORT -> strings.aiBorrowingReport
+        OVERDUE_ACTION -> strings.aiOverdueAction
+        CUSTOM_QUERY -> strings.aiCustomQuery
+    }
+    
+    fun getDescription(strings: Strings): String = when(this) {
+        ANALYZE_STOCK -> strings.aiAnalyzeStockDesc
+        SUGGEST_PROCUREMENT -> strings.aiSuggestProcurementDesc
+        BORROWING_REPORT -> strings.aiBorrowingReportDesc
+        OVERDUE_ACTION -> strings.aiOverdueActionDesc
+        CUSTOM_QUERY -> strings.aiCustomQueryDesc
+    }
 }
 
 // ==================== VIEWMODEL ====================
@@ -112,18 +109,18 @@ class AIInventoryViewModel(
         _uiState.update { it.copy(selectedAction = action, result = null, error = null) }
     }
 
-    fun executeAction() {
+    fun executeAction(strings: Strings) {
         val state = _uiState.value
 
         if (state.selectedAction.needsInput && state.inputText.text.isBlank()) {
-            _uiState.update { it.copy(error = "Masukkan pertanyaan terlebih dahulu") }
+            _uiState.update { it.copy(error = strings.aiCustomQueryHint) }
             return
         }
 
         _uiState.update { it.copy(isLoading = true, error = null, result = null) }
 
         viewModelScope.launch {
-            val prompt = buildPrompt(state.selectedAction, state.inputText.text)
+            val prompt = buildPrompt(state.selectedAction, state.inputText.text, strings)
 
             aiRepository.chat(prompt)
                 .onSuccess { result ->
@@ -133,14 +130,14 @@ class AIInventoryViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "Terjadi kesalahan saat menghubungi AI"
+                            error = error.message ?: "Error"
                         )
                     }
                 }
         }
     }
 
-    private fun buildPrompt(action: InventoryAIAction, userInput: String): String {
+    private fun buildPrompt(action: InventoryAIAction, userInput: String, strings: Strings): String {
         val inventarySummary = buildInventarySummary()
 
         val systemContext = """
@@ -153,7 +150,7 @@ class AIInventoryViewModel(
             3. Jawablah langsung ke intinya, hindari basa-basi yang panjang.
             4. Gunakan list sederhana dengan simbol peluru (•) atau penomoran biasa jika diperlukan.
             5. Pastikan jawaban lengkap dan tidak terpotong, meskipun singkat.
-            6. Gunakan Bahasa Indonesia.
+            6. ${strings.aiSystemContext}
 
             DATA INVENTARIS SAAT INI:
             $inventarySummary

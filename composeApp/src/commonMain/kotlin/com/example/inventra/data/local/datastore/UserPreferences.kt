@@ -29,6 +29,25 @@ class UserPreferences(
         val DEFAULT_CATEGORY = stringPreferencesKey("default_category")
         val SHOW_PREVIEW = booleanPreferencesKey("show_preview")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val LANGUAGE = stringPreferencesKey("language")
+    }
+    
+    // ==================== LANGUAGE ====================
+    
+    /**
+     * Observe language setting
+     */
+    val language: Flow<String> = dataStore.data.map { prefs ->
+        prefs[Keys.LANGUAGE] ?: "id"
+    }
+    
+    /**
+     * Set language
+     */
+    suspend fun setLanguage(languageCode: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.LANGUAGE] = languageCode
+        }
     }
     
     // ==================== DARK MODE ====================

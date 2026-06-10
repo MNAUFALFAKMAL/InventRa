@@ -21,15 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
-import com.example.inventra.domain.model.UserRole
-import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.presentation.components.GlassCard
 import com.example.inventra.presentation.components.InventRaBottomNav
 import com.example.inventra.presentation.components.LoadingIndicator
 import com.example.inventra.presentation.util.formatDateOnly
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,13 +41,14 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
+    val strings = AppStrings.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "InventRa",
+                        strings.appName,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -76,7 +75,7 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Gagal memuat data", color = MaterialTheme.colorScheme.error)
+                        Text(strings.failedToLoadData, color = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.height(8.dp))
                         Text(state.message, style = MaterialTheme.typography.bodySmall)
                     }
@@ -100,6 +99,8 @@ private fun DashboardContent(
     isAdmin: Boolean,
     onNavigateToAddItem: () -> Unit
 ) {
+    val strings = AppStrings.current
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -108,18 +109,18 @@ private fun DashboardContent(
             .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
         Text(
-            "InventRa",
+            strings.appName,
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            "Dashboard Overview",
+            strings.dashboardOverview,
             fontSize = 20.sp, fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.secondary
         )
         Text(
-            "Manage your assets and tracking efficiently.",
+            strings.dashboardSubtitle,
             color = MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
@@ -138,11 +139,11 @@ private fun DashboardContent(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            "${state.overdueItems} peminjaman overdue!",
+                            "${state.overdueItems} ${strings.overdueAlert}",
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleSmall
                         )
-                        Text("Segera tindak lanjuti.", style = MaterialTheme.typography.bodySmall)
+                        Text(strings.takeAction, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -152,23 +153,23 @@ private fun DashboardContent(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             StatCard(
                 Modifier.weight(1f), Icons.Default.Inventory,
-                MaterialTheme.colorScheme.primary, "TOTAL ITEMS", state.totalItems.toString()
+                MaterialTheme.colorScheme.primary, strings.totalItems, state.totalItems.toString()
             )
             StatCard(
                 Modifier.weight(1f), Icons.AutoMirrored.Filled.Outbound,
-                MaterialTheme.colorScheme.secondary, "DIPINJAM", state.borrowedItems.toString()
+                MaterialTheme.colorScheme.secondary, strings.borrowed, state.borrowedItems.toString()
             )
         }
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             StatCard(
                 Modifier.weight(1f), Icons.Default.CheckCircle,
-                Color(0xFF4CAF50), "TERSEDIA",
+                Color(0xFF4CAF50), strings.available,
                 (state.totalItems - state.borrowedItems).toString()
             )
             StatCard(
                 Modifier.weight(1f), Icons.Default.Warning,
-                MaterialTheme.colorScheme.error, "OVERDUE", state.overdueItems.toString()
+                MaterialTheme.colorScheme.error, strings.overdue, state.overdueItems.toString()
             )
         }
         if (isAdmin) {
@@ -190,13 +191,14 @@ private fun DashboardContent(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Register New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                        strings.registerNewItem, fontSize = 20.sp, fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        "Quickly add new stock into the inventory database.",
+                        strings.registerNewItemDesc,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(
@@ -205,7 +207,7 @@ private fun DashboardContent(
                             containerColor = Color.White,
                             contentColor = MaterialTheme.colorScheme.primary
                         )
-                    ) { Text("Get Started", fontWeight = FontWeight.Bold) }
+                    ) { Text(strings.getStarted, fontWeight = FontWeight.Bold) }
                 }
             }
         }
@@ -213,7 +215,7 @@ private fun DashboardContent(
         if (state.activeBorrowings.isNotEmpty()) {
             Spacer(Modifier.height(24.dp))
             Text(
-                "Peminjaman Aktif", style = MaterialTheme.typography.titleMedium,
+                strings.activeBorrowing, style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(8.dp))
@@ -247,6 +249,8 @@ private fun StatCard(
 @Composable
 private fun ActiveBorrowingCard(record: BorrowRecord) {
     val isOverdue = record.status == BorrowStatus.OVERDUE
+    val strings = AppStrings.current
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
@@ -264,10 +268,10 @@ private fun ActiveBorrowingCard(record: BorrowRecord) {
             Column(Modifier.weight(1f)) {
                 Text(record.itemName, style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold)
-                Text("Peminjam: ${record.borrowerName} (${record.borrowerDivision})",
+                Text("${strings.borrower}: ${record.borrowerName} (${record.borrowerDivision})",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline)
-                Text("Jatuh tempo: ${record.dueDate.formatDateOnly()}",
+                Text("${strings.dueDate}: ${record.dueDate.formatDateOnly()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isOverdue) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.outline)
@@ -278,7 +282,7 @@ private fun ActiveBorrowingCard(record: BorrowRecord) {
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
-                    if (isOverdue) "OVERDUE" else "AKTIF",
+                    if (isOverdue) strings.overdue else strings.active,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = if (isOverdue) MaterialTheme.colorScheme.error

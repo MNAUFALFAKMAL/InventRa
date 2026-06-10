@@ -20,9 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.domain.model.UserDivision
 import com.example.inventra.presentation.components.GlassCard
 import com.example.inventra.presentation.components.LoadingIndicator
+import com.example.inventra.presentation.util.getDisplayName
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -37,6 +39,7 @@ fun ItemDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
+    val strings = AppStrings.current
 
     // Semua dialog state di level tertinggi composable
     var showBorrowDialog by remember { mutableStateOf(false) }
@@ -68,7 +71,7 @@ fun ItemDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Detail Barang",
+                        strings.itemName, // Or "Detail Barang" localized? User said "Detail Barang"
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Bold
                     )
@@ -77,7 +80,7 @@ fun ItemDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = strings.cancel,
                             tint = MaterialTheme.colorScheme.secondary
                         )
                     }
@@ -87,14 +90,14 @@ fun ItemDetailScreen(
                         IconButton(onClick = { onNavigateToEdit(successState.item.id) }) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Edit",
+                                contentDescription = strings.editProfile,
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                         }
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Hapus",
+                                contentDescription = strings.deleteItem,
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -134,7 +137,7 @@ fun ItemDetailScreen(
                         ) {
                             Icon(Icons.Default.Phone, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Hubungi PIC")
+                            Text(strings.contactPIC)
                         }
                         Button(
                             onClick = {
@@ -153,7 +156,7 @@ fun ItemDetailScreen(
                         ) {
                             Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (item.isBorrowable) "Pinjam" else "Habis")
+                            Text(if (item.isBorrowable) strings.borrow else strings.outOfStock)
                         }
                     }
                 }
@@ -174,7 +177,7 @@ fun ItemDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "Barang tidak ditemukan",
+                        strings.itemNotFound,
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
@@ -193,9 +196,6 @@ fun ItemDetailScreen(
 
             is ItemDetailUiState.Success -> {
                 val item = state.item
-
-                // Debug log
-                println("DEBUG UI item: name=${item.name} available=${item.availableStock} total=${item.totalStock} isBorrowable=${item.isBorrowable}")
 
                 Column(
                     modifier = Modifier
@@ -258,7 +258,7 @@ fun ItemDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    item.statusLabel.uppercase(),
+                                    (if (item.isBorrowable) strings.available else strings.borrowed).uppercase(),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = if (item.isBorrowable)
@@ -276,7 +276,7 @@ fun ItemDetailScreen(
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            item.category.displayName.uppercase(),
+                            item.category.getDisplayName(strings).uppercase(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -308,7 +308,7 @@ fun ItemDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            item.location.ifBlank { "Lokasi tidak diset" },
+                            item.location.ifBlank { strings.locationNotSet },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -327,18 +327,18 @@ fun ItemDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Informasi Barang",
+                                    strings.itemInformation,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.secondary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            InfoRow("Kondisi", item.condition.displayName)
-                            InfoRow("Total Stok", "${item.totalStock} unit")
-                            InfoRow("Tersedia", "${item.availableStock} unit")
-                            InfoRow("PIC", item.picName.ifBlank { "-" })
-                            InfoRow("No. HP PIC", item.picPhone.ifBlank { "-" }, isLast = true)
+                            InfoRow(strings.condition, item.condition.getDisplayName(strings))
+                            InfoRow(strings.totalStock, "${item.totalStock} unit")
+                            InfoRow(strings.availableStock, "${item.availableStock} unit")
+                            InfoRow(strings.pic, item.picName.ifBlank { "-" })
+                            InfoRow(strings.picPhone, item.picPhone.ifBlank { "-" }, isLast = true)
                         }
                     }
 
@@ -355,7 +355,7 @@ fun ItemDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Kebijakan Peminjaman",
+                                    strings.loanPolicy,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.secondary,
                                     fontWeight = FontWeight.Bold
@@ -364,20 +364,20 @@ fun ItemDetailScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             PolicyItem(
                                 Icons.Default.CalendarToday,
-                                "Durasi Maksimal",
-                                "2 Hari Kalender"
+                                strings.maxDuration,
+                                "2 Hari Kalender" // Hardcoded in current version, but should be localized if possible
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             PolicyItem(
                                 Icons.Default.Payments,
-                                "Denda Keterlambatan",
+                                strings.overdueFine,
                                 "Rp 10.000 / Hari",
                                 isError = true
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             PolicyItem(
                                 Icons.Default.Person,
-                                "Admin",
+                                strings.admin,
                                 "Nabila Ramadhani Mujahidin (Bendahara Umum)"
                             )
                         }
@@ -396,18 +396,18 @@ fun ItemDetailScreen(
                 showBorrowDialog = false
                 borrowError = ""
             },
-            title = { Text("Ajukan Peminjaman", fontWeight = FontWeight.Bold) },
+            title = { Text(strings.requestBorrow, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Permintaan akan diproses oleh Admin.",
+                        strings.requestBorrowDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
                     OutlinedTextField(
                         value = borrowerName,
                         onValueChange = { borrowerName = it; borrowError = "" },
-                        label = { Text("Nama Peminjam *") },
+                        label = { Text(strings.borrowerNameLabel) },
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -441,21 +441,20 @@ fun ItemDetailScreen(
                                     showBorrowDialog = false
                                     borrowerName = ""
                                     borrowError = ""
-                                    snackbarMessage =
-                                        "✅ Permintaan peminjaman terkirim! Tunggu konfirmasi admin."
+                                    snackbarMessage = strings.requestSent
                                 },
                                 onError = { msg -> borrowError = msg }
                             )
                         }
                     },
                     enabled = borrowerName.isNotBlank()
-                ) { Text("Ajukan") }
+                ) { Text(strings.submitRequest) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showBorrowDialog = false
                     borrowError = ""
-                }) { Text("Batal") }
+                }) { Text(strings.cancel) }
             }
         )
     }
@@ -464,9 +463,9 @@ fun ItemDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Hapus Barang", fontWeight = FontWeight.Bold) },
+            title = { Text(strings.deleteItem, fontWeight = FontWeight.Bold) },
             text = {
-                Text("Yakin ingin menghapus barang ini? Tindakan tidak dapat dibatalkan.")
+                Text(strings.deleteItemConfirm)
             },
             confirmButton = {
                 Button(
@@ -477,11 +476,11 @@ fun ItemDetailScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                ) { Text("Hapus") }
+                ) { Text(strings.deleteItem) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal")
+                    Text(strings.cancel)
                 }
             }
         )

@@ -20,9 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.core.util.rememberImagePickerLauncher
 import com.example.inventra.domain.model.ItemCategory
 import com.example.inventra.domain.model.ItemCondition
+import com.example.inventra.presentation.util.getDisplayName
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -36,6 +38,7 @@ fun AddEditItemScreen(
     val viewModel: AddEditItemViewModel = koinViewModel { parametersOf(itemId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val strings = AppStrings.current
 
     var showImageSourceOptions by remember { mutableStateOf(false) }
     // Image picker dari galeri HP — harus di level Composable, bukan di dalam onClick
@@ -46,14 +49,14 @@ fun AddEditItemScreen(
     if (showImageSourceOptions) {
         AlertDialog(
             onDismissRequest = { showImageSourceOptions = false },
-            title = { Text("Pilih Sumber Foto") },
-            text = { Text("Ambil foto dari kamera atau pilih dari galeri.") },
+            title = { Text(strings.choosePhotoSource) },
+            text = { Text(strings.choosePhotoSourceDesc) },
             confirmButton = {
                 TextButton(onClick = {
                     showImageSourceOptions = false
                     imagePicker.takePhoto()
                 }) {
-                    Text("Kamera")
+                    Text(strings.camera)
                 }
             },
             dismissButton = {
@@ -61,7 +64,7 @@ fun AddEditItemScreen(
                     showImageSourceOptions = false
                     imagePicker.pickImage()
                 }) {
-                    Text("Galeri")
+                    Text(strings.gallery)
                 }
             }
         )
@@ -72,14 +75,14 @@ fun AddEditItemScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (itemId != null) "Edit Barang" else "Tambah Barang",
+                        if (itemId != null) strings.editProfile else strings.registerNewItem,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.cancel)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,7 +105,7 @@ fun AddEditItemScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Icon(Icons.Default.Save, "Simpan")
+                    Icon(Icons.Default.Save, strings.save)
                 }
             }
         },
@@ -136,7 +139,7 @@ fun AddEditItemScreen(
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
-                label = { Text("Nama Barang *") },
+                label = { Text(strings.itemName + " *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
@@ -146,7 +149,7 @@ fun AddEditItemScreen(
             OutlinedTextField(
                 value = uiState.description,
                 onValueChange = viewModel::onDescriptionChange,
-                label = { Text("Deskripsi") },
+                label = { Text(strings.description) },
                 modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
                 maxLines = 4
@@ -156,7 +159,7 @@ fun AddEditItemScreen(
             OutlinedTextField(
                 value = uiState.location,
                 onValueChange = viewModel::onLocationChange,
-                label = { Text("Lokasi Penyimpanan") },
+                label = { Text(strings.location) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
@@ -167,7 +170,7 @@ fun AddEditItemScreen(
                 OutlinedTextField(
                     value = uiState.picName,
                     onValueChange = viewModel::onPicNameChange,
-                    label = { Text("Nama PIC") },
+                    label = { Text(strings.pic) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -175,7 +178,7 @@ fun AddEditItemScreen(
                 OutlinedTextField(
                     value = uiState.picPhone,
                     onValueChange = viewModel::onPicPhoneChange,
-                    label = { Text("No. HP PIC") },
+                    label = { Text(strings.picPhone) },
                     placeholder = { Text("08xx") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
@@ -186,9 +189,9 @@ fun AddEditItemScreen(
                 )
             }
 
-            // ── Foto Barang dari Galeri ──────────────────────────────────────
+            // ── Foto Barang ──────────────────────────────────────
             Text(
-                "Foto Barang",
+                strings.addPhotoTitle,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -212,7 +215,7 @@ fun AddEditItemScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "Mengupload foto...",
+                                strings.uploadingPhoto,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -241,7 +244,7 @@ fun AddEditItemScreen(
                                     modifier = Modifier.size(32.dp)
                                 )
                                 Text(
-                                    "Tap untuk ganti foto",
+                                    strings.changePhoto,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -259,12 +262,14 @@ fun AddEditItemScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "Tap untuk ambil foto / pilih dari galeri",
+                                strings.addPhotoDescription,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.outline,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             Text(
-                                "JPG, PNG didukung",
+                                strings.photoSupportedFormats,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
                             )
@@ -283,7 +288,7 @@ fun AddEditItemScreen(
                 ) {
                     Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Hapus Foto")
+                    Text(strings.deletePhoto)
                 }
             }
 
@@ -292,7 +297,7 @@ fun AddEditItemScreen(
                 OutlinedTextField(
                     value = uiState.totalStock,
                     onValueChange = viewModel::onTotalStockChange,
-                    label = { Text("Total Stok") },
+                    label = { Text(strings.totalStock) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -300,15 +305,15 @@ fun AddEditItemScreen(
                 OutlinedTextField(
                     value = uiState.availableStock,
                     onValueChange = viewModel::onAvailableStockChange,
-                    label = { Text("Stok Tersedia") },
+                    label = { Text(strings.availableStock) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
             }
 
-            CategoryDropdown(selected = uiState.category, onSelected = viewModel::onCategoryChange)
-            ConditionDropdown(selected = uiState.condition, onSelected = viewModel::onConditionChange)
+            CategoryDropdown(selected = uiState.category, onSelected = viewModel::onCategoryChange, strings = strings)
+            ConditionDropdown(selected = uiState.condition, onSelected = viewModel::onConditionChange, strings = strings)
 
             Spacer(Modifier.height(80.dp))
         }
@@ -317,13 +322,14 @@ fun AddEditItemScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) -> Unit) {
+private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) -> Unit, strings: com.example.inventra.core.localization.Strings) {
     var expanded by remember { mutableStateOf(false) }
     val categories = ItemCategory.entries.filter { it != ItemCategory.ALL }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected.displayName, onValueChange = {}, readOnly = true,
-            label = { Text("Kategori") },
+            value = selected.getDisplayName(strings), 
+            onValueChange = {}, readOnly = true,
+            label = { Text(strings.category) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true),
             shape = RoundedCornerShape(12.dp)
@@ -331,7 +337,9 @@ private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) 
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             categories.forEach { cat ->
                 DropdownMenuItem(
-                    text = { Text(cat.displayName) },
+                    text = { 
+                        Text(cat.getDisplayName(strings))
+                    },
                     onClick = { onSelected(cat); expanded = false }
                 )
             }
@@ -341,12 +349,12 @@ private fun CategoryDropdown(selected: ItemCategory, onSelected: (ItemCategory) 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemCondition) -> Unit) {
+private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemCondition) -> Unit, strings: com.example.inventra.core.localization.Strings) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected.displayName, onValueChange = {}, readOnly = true,
-            label = { Text("Kondisi Barang") },
+            value = selected.getDisplayName(strings), onValueChange = {}, readOnly = true,
+            label = { Text(strings.condition) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true),
             shape = RoundedCornerShape(12.dp)
@@ -354,7 +362,7 @@ private fun ConditionDropdown(selected: ItemCondition, onSelected: (ItemConditio
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ItemCondition.entries.forEach { cond ->
                 DropdownMenuItem(
-                    text = { Text(cond.displayName) },
+                    text = { Text(cond.getDisplayName(strings)) },
                     onClick = { onSelected(cond); expanded = false }
                 )
             }
