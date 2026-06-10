@@ -1,5 +1,9 @@
 package com.example.inventra.presentation.screens.detail
 
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -133,13 +137,19 @@ fun ItemDetailScreen(
                         OutlinedButton(
                             onClick = { uriHandler.openUri(whatsappUrl) },
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(1.2f)
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
-                            Icon(Icons.Default.Phone, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(strings.contactPIC)
+                            Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                strings.contactPIC,
+                                style = MaterialTheme.typography.labelMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                         Button(
                             onClick = {
@@ -154,11 +164,16 @@ fun ItemDetailScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                            ),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
-                            Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (item.isBorrowable) strings.borrow else strings.outOfStock)
+                            Icon(Icons.Default.ShoppingCartCheckout, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (item.isBorrowable) strings.borrow else strings.outOfStock,
+                                style = MaterialTheme.typography.labelMedium,
+                                maxLines = 1
+                            )
                         }
                     }
                 }
@@ -207,20 +222,40 @@ fun ItemDetailScreen(
                         .padding(16.dp)
                 ) {
                     // Image area
+                    var scale by remember { mutableStateOf(1f) }
+                    var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(250.dp)
+                            .height(300.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    scale = (scale * zoom).coerceIn(1f, 4f)
+                                    if (scale > 1f) {
+                                        offset += pan
+                                    } else {
+                                        offset = androidx.compose.ui.geometry.Offset.Zero
+                                    }
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         if (!item.imageUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = item.imageUrl,
                                 contentDescription = item.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer(
+                                        scaleX = scale,
+                                        scaleY = scale,
+                                        translationX = offset.x,
+                                        translationY = offset.y
+                                    )
                             )
                         } else {
                             Icon(
@@ -305,11 +340,6 @@ fun ItemDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                if (item.location.isNotBlank()) {
-                                    uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=${item.location}")
-                                }
-                            }
                             .padding(4.dp)
                     ) {
                         Icon(
@@ -319,13 +349,34 @@ fun ItemDetailScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            item.location.ifBlank { strings.locationNotSet },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
-                        )
+                        
+                        val locationParts = item.location.split(" ").filter { it.isNotBlank() }
+                        Column {
+                            locationParts.forEach { part ->
+                                if (part.startsWith("http")) {
+                                    Text(
+                                        text = part,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .clickable { uriHandler.openUri(part) }
+                                            .padding(horizontal = 2.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = part,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                            if (item.location.isBlank()) {
+                                Text(strings.locationNotSet, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))

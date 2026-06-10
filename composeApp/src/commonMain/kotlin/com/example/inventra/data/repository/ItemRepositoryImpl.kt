@@ -36,7 +36,7 @@ class ItemRepositoryImpl(
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var lastSyncTime = 0L
-    private val SYNC_COOLDOWN_MS = 60_000L
+    private val SYNC_COOLDOWN_MS = 600_000L // Naikkan ke 10 menit agar data lokal stabil
 
     override fun getAllItems(): Flow<List<Item>> {
         triggerSyncIfStale()

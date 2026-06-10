@@ -1,5 +1,7 @@
 package com.example.inventra.presentation.screens.addedit
 
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -151,9 +153,13 @@ fun AddEditItemScreen(
                 value = uiState.description,
                 onValueChange = viewModel::onDescriptionChange,
                 label = { Text(strings.description) },
-                modifier = Modifier.fillMaxWidth().height(100.dp),
+                modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(12.dp),
-                maxLines = 4
+                singleLine = false,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Default
+                )
             )
 
             // Lokasi
@@ -161,9 +167,13 @@ fun AddEditItemScreen(
                 value = uiState.location,
                 onValueChange = viewModel::onLocationChange,
                 label = { Text(strings.location) },
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Nama Lokasi https://maps.google...") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = false,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    imeAction = ImeAction.Default
+                )
             )
 
             // PIC
