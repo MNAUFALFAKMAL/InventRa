@@ -201,8 +201,8 @@ fun HistoryScreen(
                                     onApproveReturn = if (isAdmin && record.status == BorrowStatus.PENDING_RETURN) {
                                         { viewModel.approveReturn(record.id) }
                                     } else null,
-                                    onReturn = if (!isAdmin && (record.status == BorrowStatus.ACTIVE ||
-                                        record.status == BorrowStatus.OVERDUE)) {
+                                    onReturn = if (record.status == BorrowStatus.ACTIVE ||
+                                        record.status == BorrowStatus.OVERDUE) {
                                         { 
                                             recordToReturn = record.id
                                             imagePicker.launch() 
