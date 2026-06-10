@@ -14,7 +14,7 @@ actual class DatabaseDriverFactory {
     actual fun createDriver(): SqlDriver {
         return NativeSqliteDriver(
             schema = InventRaDatabase.Schema,
-            name = "InventRa_v2.db"
+            name = "InventRa_v3.db"
         )
     }
 }

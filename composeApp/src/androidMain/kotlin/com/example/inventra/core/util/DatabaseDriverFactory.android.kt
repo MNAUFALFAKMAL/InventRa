@@ -19,7 +19,7 @@ actual class DatabaseDriverFactory(
         return AndroidSqliteDriver(
             schema = InventRaDatabase.Schema,
             context = context,
-            name = "InventRa_v2.db"
+            name = "InventRa_v3.db"
         )
     }
 }
