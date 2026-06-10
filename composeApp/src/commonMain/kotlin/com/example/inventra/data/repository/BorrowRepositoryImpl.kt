@@ -89,7 +89,8 @@ class BorrowRepositoryImpl(
             due_date = record.dueDate.toEpochMilliseconds(),
             return_date = null,
             status = BorrowStatus.PENDING.name,
-            fine_amount = 0L
+            fine_amount = 0L,
+            return_proof_url = null
         )
         val localId = queries.lastInsertId().executeAsOne()
 
@@ -317,7 +318,8 @@ class BorrowRepositoryImpl(
                             runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull()
                         },
                         status = dto.status,
-                        fine_amount = dto.fineAmount
+                        fine_amount = dto.fineAmount,
+                        return_proof_url = dto.returnProofUrl
                     )
                 }
             }

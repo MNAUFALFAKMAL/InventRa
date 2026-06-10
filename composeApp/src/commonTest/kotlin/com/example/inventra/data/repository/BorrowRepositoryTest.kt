@@ -67,7 +67,7 @@ class BorrowRepositoryTest {
         val record = createTestRecord().copy(id = 1L, status = BorrowStatus.ACTIVE)
         repository.addRecord(record)
 
-        repository.returnItem(1L)
+        repository.returnItem(1L, null)
 
         repository.getAllRecords().test {
             val records = awaitItem()

@@ -169,15 +169,21 @@ class FakeBorrowRepository : BorrowRepository {
         return record.id
     }
 
-    override suspend fun returnItem(recordId: Long) {
+    override suspend fun returnItem(recordId: Long, proofImageUrl: String?) {
         records.update { list ->
-            list.map { if (it.id == recordId) it.copy(status = BorrowStatus.RETURNED) else it }
+            list.map { if (it.id == recordId) it.copy(status = BorrowStatus.RETURNED, returnProofUrl = proofImageUrl) else it }
         }
     }
 
     override suspend fun approveRequest(recordId: Long) {
         records.update { list ->
             list.map { if (it.id == recordId) it.copy(status = BorrowStatus.ACTIVE) else it }
+        }
+    }
+
+    override suspend fun approveReturn(recordId: Long) {
+        records.update { list ->
+            list.map { if (it.id == recordId) it.copy(status = BorrowStatus.RETURNED) else it }
         }
     }
 
