@@ -9,7 +9,7 @@ object IndonesianStrings : Strings {
     override val home = "Beranda"
     
     // Dashboard
-    override val dashboardOverview = "Dashboard Overview"
+    override val dashboardOverview = "Ringkasan Dashboard"
     override val dashboardSubtitle = "Kelola aset dan pelacakan barang dengan efisien."
     override val totalItems = "TOTAL BARANG"
     override val borrowed = "DIPINJAM"
@@ -25,9 +25,9 @@ object IndonesianStrings : Strings {
     override val failedToLoadData = "Gagal memuat data"
     
     // Profile Screen
-    override val myProfile = "Profil Saya"
+    override val myProfile = "Profil Divisi"
     override val editProfile = "Edit Profil"
-    override val fullName = "Nama Lengkap"
+    override val fullName = "Divisi"
     override val phoneNumber = "Nomor HP"
     override val cancel = "Batal"
     override val save = "Simpan"
@@ -84,7 +84,7 @@ object IndonesianStrings : Strings {
     override val deleteItemConfirm = "Yakin ingin menghapus barang ini? Tindakan tidak dapat dibatalkan."
     override val requestBorrow = "Ajukan Peminjaman"
     override val requestBorrowDesc = "Permintaan akan diproses oleh Admin."
-    override val borrowerNameLabel = "Nama Peminjam *"
+    override val borrowerNameLabel = "Nama Kepala Divisi *"
     override val submitRequest = "Ajukan"
     override val requestSent = "✅ Permintaan peminjaman terkirim! Tunggu konfirmasi admin."
     override val locationNotSet = "Lokasi tidak diset"
@@ -154,8 +154,8 @@ object IndonesianStrings : Strings {
     override val returnProofTitle = "Bukti Pengembalian"
     override val returnProofDesc = "Ambil foto bukti pengembalian atau pilih dari galeri."
     override val close = "Tutup"
-    override val adminHead = "Admin / Kepala"
-    override val members = "Anggota"
+    override val adminHead = "Kepala Divisi"
+    override val members = "Anggota & Staff"
     override val noMembers = "Belum ada anggota terdaftar."
     override val createAndManageAccountDesc = "Buat dan kelola akun anggota divisi"
     override val resetDataDesc = "Hapus seluruh item dan riwayat peminjaman"

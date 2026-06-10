@@ -27,7 +27,7 @@ object EnglishStrings : Strings {
     // Profile Screen
     override val myProfile = "My Profile"
     override val editProfile = "Edit Profile"
-    override val fullName = "Full Name"
+    override val fullName = "Division"
     override val phoneNumber = "Phone Number"
     override val cancel = "Cancel"
     override val save = "Save"
@@ -84,7 +84,7 @@ object EnglishStrings : Strings {
     override val deleteItemConfirm = "Are you sure you want to delete this item? This action cannot be undone."
     override val requestBorrow = "Request Borrowing"
     override val requestBorrowDesc = "Request will be processed by Admin."
-    override val borrowerNameLabel = "Borrower Name *"
+    override val borrowerNameLabel = "Division Head Name *"
     override val submitRequest = "Submit"
     override val requestSent = "✅ Borrowing request sent! Wait for admin confirmation."
     override val locationNotSet = "Location not set"

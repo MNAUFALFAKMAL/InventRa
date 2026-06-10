@@ -109,12 +109,6 @@ private fun DashboardContent(
             .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
         Text(
-            strings.appName,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
             strings.dashboardOverview,
             fontSize = 20.sp, fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.secondary

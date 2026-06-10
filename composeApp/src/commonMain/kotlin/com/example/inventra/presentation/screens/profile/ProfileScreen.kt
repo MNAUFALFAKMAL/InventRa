@@ -28,6 +28,7 @@ import com.example.inventra.core.localization.LocalLanguage
 import com.example.inventra.core.localization.Strings
 import com.example.inventra.core.util.rememberImagePickerLauncher
 import com.example.inventra.domain.model.User
+import com.example.inventra.domain.model.UserDivision
 import com.example.inventra.domain.model.UserRole
 import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.presentation.components.InventRaBottomNav
@@ -50,6 +51,8 @@ data class ProfileUiState(
     val isEditMode: Boolean = false,
     val editName: String = "",
     val editPhone: String = "",
+    val editDivisionHead: String = "",
+    val editStaffList: String = "",
     val divisionMembers: List<User> = emptyList(),
     val isLoadingMembers: Boolean = false
 )
@@ -105,8 +108,14 @@ class ProfileViewModel(
         viewModelScope.launch {
             val user = authRepository.getCurrentUser()
             _uiState.update {
-                it.copy(isLoading = false, user = user,
-                    editName = user?.name ?: "", editPhone = user?.phone ?: "")
+                it.copy(
+                    isLoading = false, 
+                    user = user,
+                    editName = user?.name ?: "", 
+                    editPhone = user?.phone ?: "",
+                    editDivisionHead = user?.divisionHead ?: "",
+                    editStaffList = user?.staffList ?: ""
+                )
             }
             if (user != null) loadDivisionMembers(user)
         }
@@ -128,6 +137,8 @@ class ProfileViewModel(
     fun exitEditMode() = _uiState.update { it.copy(isEditMode = false) }
     fun onNameChange(v: String) = _uiState.update { it.copy(editName = v) }
     fun onPhoneChange(v: String) = _uiState.update { it.copy(editPhone = v) }
+    fun onDivisionHeadChange(v: String) = _uiState.update { it.copy(editDivisionHead = v) }
+    fun onStaffListChange(v: String) = _uiState.update { it.copy(editStaffList = v) }
 
     fun uploadAvatar(bytes: ByteArray, fileName: String, strings: Strings) {
         _uiState.update { it.copy(isSaving = true) }
@@ -156,7 +167,9 @@ class ProfileViewModel(
             authRepository.updateProfile(
                 name = state.editName,
                 phone = state.editPhone.ifBlank { null },
-                avatarUrl = null
+                avatarUrl = null,
+                divisionHead = state.editDivisionHead,
+                staffList = state.editStaffList
             ).onSuccess { user ->
                 _uiState.update { it.copy(isSaving = false, isEditMode = false, user = user, successMessage = strings.profileUpdated) }
                 loadProfile() // Re-fetch
@@ -222,7 +235,7 @@ fun ProfileScreen(
     }
 
     val user = uiState.user
-    val isAdmin = user?.role == UserRole.ADMIN
+    val isBendaharaUmum = user?.division == UserDivision.BENDAHARA_UMUM
     var showAvatarDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -331,17 +344,14 @@ fun ProfileScreen(
                 )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isAdmin) {
+            if (isBendaharaUmum) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
-                        Text("ADMIN", style = MaterialTheme.typography.labelSmall, color = Color.White,
+                        Text("BENDAHARA UMUM", style = MaterialTheme.typography.labelSmall, color = Color.White,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                     }
-                    Spacer(Modifier.width(6.dp))
                 }
-                Text(user?.division?.displayName ?: "", style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline)
             }
             Spacer(Modifier.height(24.dp))
 
@@ -349,17 +359,27 @@ fun ProfileScreen(
             if (uiState.isEditMode) {
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.padding(16.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(strings.editProfile, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(12.dp))
+                        
                         OutlinedTextField(value = uiState.editName, onValueChange = viewModel::onNameChange,
                             label = { Text(strings.fullName) }, singleLine = true,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(8.dp))
+                        
                         OutlinedTextField(value = uiState.editPhone, onValueChange = viewModel::onPhoneChange,
                             label = { Text(strings.phoneNumber) }, singleLine = true,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(12.dp))
+
+                        OutlinedTextField(value = uiState.editDivisionHead, onValueChange = viewModel::onDivisionHeadChange,
+                            label = { Text(if (isBendaharaUmum) "Bendahara Umum" else strings.adminHead) }, singleLine = true,
+                            shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+
+                        OutlinedTextField(value = uiState.editStaffList, onValueChange = viewModel::onStaffListChange,
+                            label = { Text(if (isBendaharaUmum) "Daftar Staff (Pisahkan dengan koma)" else strings.members + " (Pisahkan dengan koma)") },
+                            placeholder = { Text("Nama 1, Nama 2, ...") },
+                            shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth(),
+                            minLines = 2)
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = viewModel::exitEditMode, modifier = Modifier.weight(1f)) { Text(strings.cancel) }
                             Button(onClick = { viewModel.saveProfile(strings) }, modifier = Modifier.weight(1f),
@@ -375,9 +395,7 @@ fun ProfileScreen(
 
             // ── Division Info ──────────────────────────────────────────────
             DivisionInfoCard(
-                divisionName = user?.division?.displayName ?: "",
-                members = uiState.divisionMembers,
-                isLoading = uiState.isLoadingMembers,
+                user = user,
                 strings = strings
             )
             Spacer(Modifier.height(16.dp))
@@ -466,7 +484,7 @@ fun ProfileScreen(
             }
 
             // ── Admin: Manajemen Akun ──────────────────────────────────────
-            if (isAdmin) {
+            if (user?.role == UserRole.ADMIN) {
                 var showResetDialog by remember { mutableStateOf(false) }
 
                 if (showResetDialog) {
@@ -549,70 +567,82 @@ fun ProfileScreen(
 // ── Division Info Card ────────────────────────────────────────────────────────
 
 @Composable
-private fun DivisionInfoCard(divisionName: String, members: List<User>, isLoading: Boolean, strings: Strings) {
-    if (divisionName.isBlank()) return
+private fun DivisionInfoCard(user: User?, strings: Strings) {
+    if (user == null) return
+    val isBendaharaUmum = user.division == UserDivision.BENDAHARA_UMUM
+    val staffList = user.staffList?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: emptyList()
+    
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Groups, null, tint = MaterialTheme.colorScheme.primary)
+                Icon(if (isBendaharaUmum) Icons.Default.AccountBalance else Icons.Default.Groups, 
+                    null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text("Divisi $divisionName", style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    if (isBendaharaUmum) user.division.displayName else "Divisi ${user.division.displayName}", 
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary
+                )
             }
             Spacer(Modifier.height(12.dp))
-            if (isLoading) {
-                Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) {
-                    CircularProgressIndicator(Modifier.size(24.dp))
+            
+            // ── LAYER 1: Kepala Divisi / Bendahara Umum ──
+            val headLabel = if (isBendaharaUmum) "Bendahara Umum" else strings.adminHead
+            
+            Text(headLabel, style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 6.dp))
+            
+            if (user.divisionHead.isNullOrBlank()) {
+                Text("- Belum diisi -", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            } else {
+                Surface(color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(if (isBendaharaUmum) Icons.Default.Person else Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(user.divisionHead, style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
                 }
-            } else if (members.isEmpty()) {
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // ── LAYER 2: Anggota & Staff ──
+            Text(
+                if (isBendaharaUmum) "Daftar Staff" else strings.members, 
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.outline, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+
+            if (staffList.isEmpty()) {
                 Text(strings.noMembers, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline)
             } else {
-                val admins = members.filter { it.role == UserRole.ADMIN }
-                val regular = members.filter { it.role != UserRole.ADMIN }
-                admins.forEach { admin ->
-                    Surface(color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                            Spacer(Modifier.width(10.dp))
-                            Column {
-                                Text(strings.adminHead, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
-                                Text(admin.name, style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer)
+                staffList.forEachIndexed { index, name ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.size(28.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("${index + 1}", style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer)
                             }
                         }
+                        Spacer(Modifier.width(10.dp))
+                        Text(name, style = MaterialTheme.typography.bodyMedium)
                     }
-                    Spacer(Modifier.height(8.dp))
-                }
-                if (regular.isNotEmpty()) {
-                    Text("${strings.members} (${regular.size})", style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(bottom = 4.dp))
-                    regular.forEachIndexed { index, member ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.size(28.dp)) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text("${index + 1}", style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer)
-                                }
-                            }
-                            Spacer(Modifier.width(10.dp))
-                            Text(member.name, style = MaterialTheme.typography.bodyMedium)
-                        }
-                        if (index < regular.size - 1) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                                modifier = Modifier.padding(start = 38.dp))
-                        }
+                    if (index < staffList.size - 1) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            modifier = Modifier.padding(start = 38.dp))
                     }
                 }
             }

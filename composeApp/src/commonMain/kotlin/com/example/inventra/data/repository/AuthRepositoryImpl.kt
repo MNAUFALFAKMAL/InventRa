@@ -16,6 +16,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -233,7 +234,11 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun updateProfile(
-        name: String, phone: String?, avatarUrl: String?
+        name: String, 
+        phone: String?, 
+        avatarUrl: String?,
+        divisionHead: String?,
+        staffList: String?
     ): Result<User> {
         return try {
             val userId = auth.currentUserOrNull()?.id
@@ -243,6 +248,8 @@ class AuthRepositoryImpl(
                 put("name", name)
                 if (phone != null) put("phone", phone)
                 if (avatarUrl != null) put("avatar_url", avatarUrl)
+                if (divisionHead != null) put("division_head", divisionHead)
+                if (staffList != null) put("staff_list", staffList)
             }
 
             db["profiles"].update(updateData) { filter { eq("id", userId) } }
@@ -313,13 +320,40 @@ class AuthRepositoryImpl(
         } catch (e: Exception) { Result.failure(e) }
     }
 
+    override suspend fun updateUserEmail(userId: String, email: String): Result<Unit> {
+        return try {
+            val bodyJson = """{ "email": "$email" }"""
+            val response = httpClient.put("${ApiConfig.supabaseUrl}/auth/v1/admin/users/$userId") {
+                header("apikey", ApiConfig.supabaseServiceRoleKey)
+                header("Authorization", "Bearer ${ApiConfig.supabaseServiceRoleKey}")
+                setBody(TextContent(bodyJson, ContentType.Application.Json))
+            }
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception("Gagal update email: ${response.status}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    override suspend fun updateUserPassword(userId: String, password: String): Result<Unit> {
+        return try {
+            val bodyJson = """{ "password": "$password" }"""
+            val response = httpClient.put("${ApiConfig.supabaseUrl}/auth/v1/admin/users/$userId") {
+                header("apikey", ApiConfig.supabaseServiceRoleKey)
+                header("Authorization", "Bearer ${ApiConfig.supabaseServiceRoleKey}")
+                setBody(TextContent(bodyJson, ContentType.Application.Json))
+            }
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception("Gagal update password: ${response.status}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
     private fun ProfileDto.toUser(email: String) = User(
         id = id, name = name, email = email,
         role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
         division = try {
             UserDivision.valueOf(division)
         } catch (e: Exception) { UserDivision.PUBDOK },
-        studentId = studentId, phone = phone, avatarUrl = avatarUrl, isActive = isActive
+        studentId = studentId, phone = phone, avatarUrl = avatarUrl, isActive = isActive,
+        divisionHead = divisionHead, staffList = staffList
     )
 
     private fun parseAuthError(message: String?): String = when {

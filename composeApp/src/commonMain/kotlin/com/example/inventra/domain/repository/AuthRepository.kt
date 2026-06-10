@@ -17,7 +17,13 @@ interface AuthRepository {
     ): Result<User>
     suspend fun logout(): Result<Unit>
     suspend fun getCurrentUser(): User?
-    suspend fun updateProfile(name: String, phone: String?, avatarUrl: String?): Result<User>
+    suspend fun updateProfile(
+        name: String, 
+        phone: String?, 
+        avatarUrl: String?,
+        divisionHead: String? = null,
+        staffList: String? = null
+    ): Result<User>
     suspend fun updateAvatar(imageBytes: ByteArray, fileName: String): Result<String>
     suspend fun getAllUsers(): Result<List<User>>
     suspend fun deleteUser(userId: String): Result<Unit>
@@ -25,4 +31,10 @@ interface AuthRepository {
 
     /** Admin: edit nama user lain untuk pengelolaan divisi */
     suspend fun updateUserName(userId: String, name: String): Result<Unit>
+
+    /** Admin: edit email user lain */
+    suspend fun updateUserEmail(userId: String, email: String): Result<Unit>
+
+    /** Admin: edit password user lain */
+    suspend fun updateUserPassword(userId: String, password: String): Result<Unit>
 }

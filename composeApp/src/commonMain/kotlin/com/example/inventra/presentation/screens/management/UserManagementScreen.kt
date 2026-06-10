@@ -82,7 +82,6 @@ class UserManagementViewModel(
     fun onNewEmailChange(v: String) = _uiState.update { it.copy(newEmail = v) }
     fun onNewPasswordChange(v: String) = _uiState.update { it.copy(newPassword = v) }
     
-    // Sprint 4 fix: Otomatisasi role berdasarkan divisi
     fun onNewDivisionChange(v: UserDivision) {
         _uiState.update { 
             it.copy(
@@ -153,15 +152,30 @@ class UserManagementViewModel(
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
 
-    fun editUserName(userId: String, newName: String) {
+    fun editUser(userId: String, newName: String, newEmail: String) {
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            authRepository.updateUserName(userId, newName)
+            try {
+                authRepository.updateUserName(userId, newName).getOrThrow()
+                authRepository.updateUserEmail(userId, newEmail).getOrThrow()
+                _uiState.update { it.copy(successMessage = "Data akun berhasil diperbarui", isLoading = false) }
+                loadUsers()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message, isLoading = false) }
+            }
+        }
+    }
+
+    fun editPassword(userId: String, newPass: String) {
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            authRepository.updateUserPassword(userId, newPass)
                 .onSuccess {
-                    _uiState.update { it.copy(successMessage = "Nama berhasil diubah") }
+                    _uiState.update { it.copy(successMessage = "Password berhasil diubah", isLoading = false) }
                     loadUsers()
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(error = e.message, isLoading = false) }
                 }
         }
     }
@@ -243,7 +257,7 @@ fun UserManagementScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "Sebagai Admin, Anda dapat membuat, menghapus, dan mengubah role akun anggota divisi.",
+                        "Sebagai Admin, Anda dapat membuat, menghapus, mengubah data, dan mengubah role akun anggota divisi.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -291,7 +305,8 @@ fun UserManagementScreen(
                             user = user,
                             onDelete = { viewModel.deleteUser(user.id, user.name) },
                             onToggleRole = { viewModel.toggleRole(user) },
-                            onEditName = { newName -> viewModel.editUserName(user.id, newName) }
+                            onEdit = { name, email -> viewModel.editUser(user.id, name, email) },
+                            onEditPassword = { pass -> viewModel.editPassword(user.id, pass) }
                         )
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -322,14 +337,18 @@ private fun UserCard(
     user: User,
     onDelete: () -> Unit,
     onToggleRole: () -> Unit,
-    onEditName: (newName: String) -> Unit
+    onEdit: (name: String, email: String) -> Unit,
+    onEditPassword: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showEditNameDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    
     var editNameValue by remember { mutableStateOf(user.name) }
-    val isAdmin = user.role == UserRole.ADMIN  // FIX: pakai user parameter, bukan currentUser
-
-    // HAPUS NavigationItem block - tidak ada di sini
+    var editEmailValue by remember { mutableStateOf(user.email) }
+    var newPasswordValue by remember { mutableStateOf("") }
+    
+    val isAdmin = user.role == UserRole.ADMIN
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -341,72 +360,130 @@ private fun UserCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = if (isAdmin) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        user.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isAdmin) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(user.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    if (isAdmin) {
-                        Spacer(Modifier.width(6.dp))
-                        Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
-                            Text("ADMIN", style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
-                        }
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (isAdmin) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            user.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isAdmin) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
                     }
                 }
-                Text(user.division.displayName, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(user.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        if (isAdmin) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
+                                Text("ADMIN", style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            }
+                        }
+                    }
+                    Text(user.division.displayName, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline)
+                    Text(user.email, style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+                }
             }
-            IconButton(onClick = { editNameValue = user.name; showEditNameDialog = true },
-                modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Edit, "Edit Nama", tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = onToggleRole, modifier = Modifier.size(36.dp)) {
-                Icon(if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.Person,
-                    "Toggle Role", tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.DeleteOutline, "Hapus", tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(18.dp))
+            
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { 
+                    editNameValue = user.name
+                    editEmailValue = user.email
+                    showEditDialog = true 
+                }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.Edit, "Edit", tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(18.dp))
+                }
+                IconButton(onClick = { 
+                    newPasswordValue = ""
+                    showPasswordDialog = true 
+                }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.LockReset, "Password", tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp))
+                }
+                IconButton(onClick = onToggleRole, modifier = Modifier.size(36.dp)) {
+                    Icon(if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.Person,
+                        "Role", tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp))
+                }
+                IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.DeleteOutline, "Hapus", tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp))
+                }
             }
         }
     }
 
-    if (showEditNameDialog) {
+    if (showEditDialog) {
         AlertDialog(
-            onDismissRequest = { showEditNameDialog = false },
-            title = { Text("Edit Nama", fontWeight = FontWeight.Bold) },
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Data Akun", fontWeight = FontWeight.Bold) },
             text = {
-                OutlinedTextField(value = editNameValue, onValueChange = { editNameValue = it },
-                    label = { Text("Nama Lengkap") }, singleLine = true,
-                    shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(value = editNameValue, onValueChange = { editNameValue = it },
+                        label = { Text("Nama Lengkap") }, singleLine = true,
+                        shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+                    
+                    OutlinedTextField(value = editEmailValue, onValueChange = { editEmailValue = it },
+                        label = { Text("Email") }, singleLine = true,
+                        shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+                }
             },
             confirmButton = {
-                Button(onClick = { if (editNameValue.isNotBlank()) { onEditName(editNameValue.trim()); showEditNameDialog = false } }) { Text("Simpan") }
+                Button(onClick = { 
+                    if (editNameValue.isNotBlank() && editEmailValue.isNotBlank()) { 
+                        onEdit(editNameValue.trim(), editEmailValue.trim())
+                        showEditDialog = false 
+                    } 
+                }) { Text("Simpan") }
             },
-            dismissButton = { TextButton(onClick = { showEditNameDialog = false }) { Text("Batal") } }
+            dismissButton = { TextButton(onClick = { showEditDialog = false }) { Text("Batal") } }
+        )
+    }
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Ubah Password", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = newPasswordValue, onValueChange = { newPasswordValue = it },
+                    label = { Text("Password Baru (min 6 karakter)") }, 
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(8.dp), 
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    if (newPasswordValue.length >= 6) { 
+                        onEditPassword(newPasswordValue)
+                        showPasswordDialog = false 
+                    } 
+                }) { Text("Ubah") }
+            },
+            dismissButton = { TextButton(onClick = { showPasswordDialog = false }) { Text("Batal") } }
         )
     }
 
@@ -459,7 +536,6 @@ private fun RegisterUserDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Error in dialog
                 if (uiState.error != null) {
                     Card(
                         colors = CardDefaults.cardColors(
@@ -503,7 +579,6 @@ private fun RegisterUserDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Divisi dropdown
                 ExposedDropdownMenuBox(
                     expanded = showDivisionMenu,
                     onExpandedChange = { showDivisionMenu = it }
@@ -535,7 +610,6 @@ private fun RegisterUserDialog(
                     }
                 }
 
-                // Role dropdown
                 ExposedDropdownMenuBox(
                     expanded = showRoleMenu,
                     onExpandedChange = { showRoleMenu = it }
