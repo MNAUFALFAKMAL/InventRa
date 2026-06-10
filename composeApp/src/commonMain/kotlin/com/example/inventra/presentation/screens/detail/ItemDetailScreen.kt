@@ -1,6 +1,7 @@
 package com.example.inventra.presentation.screens.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +42,7 @@ fun ItemDetailScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
     val strings = AppStrings.current
+    val uriHandler = LocalUriHandler.current
 
     // Semua dialog state di level tertinggi composable
     var showBorrowDialog by remember { mutableStateOf(false) }
@@ -113,7 +115,6 @@ fun ItemDetailScreen(
             // Gunakan successState yang sudah di-resolve di atas
             if (successState != null) {
                 val item = successState.item
-                val uriHandler = LocalUriHandler.current
                 val whatsappUrl = "https://wa.me/6287714891011?text=" +
                         "Halo Admin, saya ingin info peminjaman *${item.name}* " +
                         "dari inventaris HMIF ITERA."
@@ -300,7 +301,17 @@ fun ItemDetailScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                if (item.location.isNotBlank()) {
+                                    uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=${item.location}")
+                                }
+                            }
+                            .padding(4.dp)
+                    ) {
                         Icon(
                             Icons.Default.LocationOn,
                             contentDescription = null,
@@ -311,7 +322,9 @@ fun ItemDetailScreen(
                         Text(
                             item.location.ifBlank { strings.locationNotSet },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                         )
                     }
 
@@ -339,7 +352,17 @@ fun ItemDetailScreen(
                             InfoRow(strings.totalStock, "${item.totalStock} unit")
                             InfoRow(strings.availableStock, "${item.availableStock} unit")
                             InfoRow(strings.pic, item.picName.ifBlank { "-" })
-                            InfoRow(strings.picPhone, item.picPhone.ifBlank { "-" }, isLast = true)
+                            InfoRow(
+                                label = strings.picPhone,
+                                value = item.picPhone.ifBlank { "-" },
+                                isLast = true,
+                                isClickable = item.picPhone.isNotBlank(),
+                                onClick = {
+                                    val phone = item.picPhone.replace(Regex("[^0-9]"), "")
+                                    val formattedPhone = if (phone.startsWith("0")) "62" + phone.substring(1) else phone
+                                    uriHandler.openUri("https://wa.me/$formattedPhone")
+                                }
+                            )
                         }
                     }
 
@@ -491,12 +514,20 @@ fun ItemDetailScreen(
 // ==================== PRIVATE COMPOSABLES ====================
 
 @Composable
-private fun InfoRow(label: String, value: String, isLast: Boolean = false) {
+private fun InfoRow(
+    label: String,
+    value: String,
+    isLast: Boolean = false,
+    isClickable: Boolean = false,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (isClickable) Modifier.clickable { onClick() } else Modifier)
             .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             label,
@@ -506,7 +537,9 @@ private fun InfoRow(label: String, value: String, isLast: Boolean = false) {
         Text(
             value,
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isClickable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (isClickable) androidx.compose.ui.text.style.TextDecoration.Underline else null
         )
     }
     if (!isLast) {

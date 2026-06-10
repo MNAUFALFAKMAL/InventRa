@@ -199,6 +199,7 @@ fun ProfileScreen(
     val currentLanguage = LocalLanguage.current
     val strings = AppStrings.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     var showImageSourceOptions by remember { mutableStateOf(false) }
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
@@ -342,7 +343,17 @@ fun ProfileScreen(
                     text = user?.phone ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 2.dp)
+                    fontWeight = FontWeight.SemiBold,
+                    textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                    modifier = Modifier
+                        .padding(vertical = 2.dp)
+                        .clickable {
+                            val phone = user?.phone?.replace(Regex("[^0-9]"), "") ?: ""
+                            val formattedPhone = if (phone.startsWith("0")) "62" + phone.substring(1) else phone
+                            if (formattedPhone.isNotBlank()) {
+                                uriHandler.openUri("https://wa.me/$formattedPhone")
+                            }
+                        }
                 )
             }
 

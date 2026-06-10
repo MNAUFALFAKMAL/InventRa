@@ -1,6 +1,7 @@
 package com.example.inventra.presentation.screens.management
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -192,6 +193,7 @@ fun UserManagementScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let {
@@ -307,7 +309,8 @@ fun UserManagementScreen(
                             onDelete = { viewModel.deleteUser(user.id, user.name) },
                             onToggleRole = { viewModel.toggleRole(user) },
                             onEdit = { name, email -> viewModel.editUser(user.id, name, email) },
-                            onEditPassword = { pass -> viewModel.editPassword(user.id, pass) }
+                            onEditPassword = { pass -> viewModel.editPassword(user.id, pass) },
+                            uriHandler = uriHandler
                         )
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -339,7 +342,8 @@ private fun UserCard(
     onDelete: () -> Unit,
     onToggleRole: () -> Unit,
     onEdit: (name: String, email: String) -> Unit,
-    onEditPassword: (String) -> Unit
+    onEditPassword: (String) -> Unit,
+    uriHandler: androidx.compose.ui.platform.UriHandler
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -394,8 +398,30 @@ private fun UserCard(
                     }
                     Text(user.division.displayName, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline)
-                    Text(user.email, style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+                    
+                    Text(
+                        text = user.email,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        modifier = Modifier.clickable {
+                            uriHandler.openUri("mailto:${user.email}")
+                        }
+                    )
+
+                    if (!user.phone.isNullOrBlank()) {
+                        Text(
+                            text = user.phone,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                            modifier = Modifier.clickable {
+                                val phone = user.phone.replace(Regex("[^0-9]"), "")
+                                val formattedPhone = if (phone.startsWith("0")) "62" + phone.substring(1) else phone
+                                uriHandler.openUri("https://wa.me/$formattedPhone")
+                            }
+                        )
+                    }
                 }
             }
             
