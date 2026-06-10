@@ -279,6 +279,16 @@ fun ProfileScreen(
             // ── Nama & Role ────────────────────────────────────────────────
             Text(user?.name ?: "Pengguna", style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold)
+            
+            if (!user?.phone.isNullOrBlank()) {
+                Text(
+                    text = user?.phone ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isAdmin) {
                     Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
