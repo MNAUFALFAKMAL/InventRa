@@ -7,6 +7,7 @@ import com.example.inventra.domain.model.User
 import com.example.inventra.domain.model.UserRole
 import com.example.inventra.domain.repository.AuthRepository
 import com.example.inventra.domain.repository.BorrowRepository
+import com.example.inventra.domain.repository.ItemRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -19,7 +20,7 @@ sealed interface HistoryUiState {
 class HistoryViewModel(
     private val borrowRepository: BorrowRepository,
     private val authRepository: AuthRepository,
-    private val itemRepository: com.example.inventra.domain.repository.ItemRepository
+    private val itemRepository: ItemRepository
 ) : ViewModel() {
 
     val currentUser: StateFlow<User?> = flow {

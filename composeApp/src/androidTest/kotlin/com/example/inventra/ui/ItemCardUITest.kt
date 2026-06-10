@@ -78,7 +78,8 @@ class ItemCardUITest {
             }
         }
 
-        composeTestRule.onNodeWithText("Pinjam").assertIsNotEnabled()
+        // Ketika stok 0, teks tombol berubah menjadi "Habis" (strings.outOfStock)
+        composeTestRule.onNodeWithText("Habis").assertIsNotEnabled()
     }
 
     // UI Test 4

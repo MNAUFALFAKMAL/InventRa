@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlin.Result
 
 class FakeAuthRepository : AuthRepository {
     private val _currentUserFlow = MutableStateFlow<User?>(null)
@@ -48,7 +49,14 @@ class FakeAuthRepository : AuthRepository {
         division: String,
         role: String
     ): Result<User> {
-        return Result.success(User(id = "2", name = name, email = email, role = UserRole.valueOf(role), division = UserDivision.valueOf(division)))
+        val user = User(
+            id = "2", 
+            name = name, 
+            email = email, 
+            role = try { UserRole.valueOf(role) } catch(e: Exception) { UserRole.MEMBER }, 
+            division = try { UserDivision.valueOf(division) } catch(e: Exception) { UserDivision.PUBDOK }
+        )
+        return Result.success(user)
     }
 
     override suspend fun logout(): Result<Unit> {
@@ -58,10 +66,22 @@ class FakeAuthRepository : AuthRepository {
 
     override suspend fun getCurrentUser(): User? = loggedInUser
 
-    override suspend fun updateProfile(name: String, phone: String?, avatarUrl: String?): Result<User> {
-        val updated = loggedInUser?.copy(name = name, phone = phone, avatarUrl = avatarUrl)
+    override suspend fun updateProfile(
+        name: String, 
+        phone: String?, 
+        avatarUrl: String?,
+        divisionHead: String?,
+        staffList: String?
+    ): Result<User> {
+        val updated = loggedInUser?.copy(
+            name = name, 
+            phone = phone, 
+            avatarUrl = avatarUrl,
+            divisionHead = divisionHead,
+            staffList = staffList
+        )
         loggedInUser = updated
-        return Result.success(updated!!)
+        return if (updated != null) Result.success(updated) else Result.failure(Exception("Not logged in"))
     }
 
     override suspend fun updateAvatar(imageBytes: ByteArray, fileName: String): Result<String> {
@@ -81,6 +101,14 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun updateUserName(userId: String, name: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
+    override suspend fun updateUserEmail(userId: String, email: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
+    override suspend fun updateUserPassword(userId: String, password: String): Result<Unit> {
         return Result.success(Unit)
     }
 }
@@ -192,4 +220,24 @@ class FakeBorrowRepository : BorrowRepository {
     override suspend fun deleteAll() {
         records.update { emptyList() }
     }
+}
+
+class FakeUserPreferences : com.example.inventra.data.local.datastore.UserPreferences {
+    override val language = MutableStateFlow("id")
+    override suspend fun setLanguage(languageCode: String) { language.value = languageCode }
+    
+    override val isDarkMode = MutableStateFlow(false)
+    override suspend fun setDarkMode(enabled: Boolean) { isDarkMode.value = enabled }
+    
+    override val sortBy = MutableStateFlow("UPDATED_DESC")
+    override suspend fun setSortBy(sortBy: String) { this.sortBy.value = sortBy }
+    
+    override val defaultCategory = MutableStateFlow("GENERAL")
+    override suspend fun setDefaultCategory(category: String) { this.defaultCategory.value = category }
+    
+    override val showPreview = MutableStateFlow(true)
+    override suspend fun setShowPreview(show: Boolean) { this.showPreview.value = show }
+    
+    override val isOnboardingCompleted = MutableStateFlow(false)
+    override suspend fun setOnboardingCompleted() { isOnboardingCompleted.value = true }
 }

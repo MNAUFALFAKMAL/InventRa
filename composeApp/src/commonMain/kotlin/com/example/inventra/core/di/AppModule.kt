@@ -5,6 +5,7 @@ import com.example.inventra.core.util.DatabaseDriverFactory
 import com.example.inventra.data.local.InventRaDatabase
 import com.example.inventra.data.local.datastore.DataStoreFactory
 import com.example.inventra.data.local.datastore.UserPreferences
+import com.example.inventra.data.local.datastore.UserPreferencesImpl
 import com.example.inventra.data.local.datastore.create
 import com.example.inventra.data.remote.api.GeminiService
 import com.example.inventra.data.repository.AIRepositoryImpl
@@ -50,7 +51,7 @@ val databaseModule = module {
 
 val preferencesModule = module {
     single { get<DataStoreFactory>().create() }
-    single { UserPreferences(get()) }
+    single<UserPreferences> { UserPreferencesImpl(get()) }
 }
 
 val repositoryModule = module {

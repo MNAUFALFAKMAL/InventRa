@@ -3,6 +3,7 @@ package com.example.inventra.presentation
 import app.cash.turbine.test
 import com.example.inventra.FakeAuthRepository
 import com.example.inventra.FakeBorrowRepository
+import com.example.inventra.FakeItemRepository
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
 import com.example.inventra.domain.model.User
@@ -29,6 +30,7 @@ class HistoryViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var borrowRepository: FakeBorrowRepository
+    private lateinit var itemRepository: FakeItemRepository
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var viewModel: HistoryViewModel
 
@@ -36,6 +38,7 @@ class HistoryViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         borrowRepository = FakeBorrowRepository()
+        itemRepository = FakeItemRepository()
         authRepository = FakeAuthRepository()
         
         // Default to admin for full visibility unless specified
@@ -44,7 +47,11 @@ class HistoryViewModelTest {
             role = UserRole.ADMIN, division = UserDivision.BENDAHARA_UMUM
         )
         
-        viewModel = HistoryViewModel(borrowRepository, authRepository)
+        viewModel = HistoryViewModel(
+            borrowRepository = borrowRepository, 
+            authRepository = authRepository, 
+            itemRepository = itemRepository
+        )
     }
 
     @AfterTest

@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 
 /**
  * Critical Flow UI Test for Login.
- * Sprint 4 fix.
+ * Sprint 4 fix with scroll support and unmerged tree.
  */
 @RunWith(AndroidJUnit4::class)
 class CriticalFlowsUITest {
@@ -19,7 +19,6 @@ class CriticalFlowsUITest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    // Critical Flow Test 1: Tombol login tampil dengan teks yang benar
     @Test
     fun loginScreen_loginButtonIsDisplayed() {
         composeTestRule.setContent {
@@ -28,10 +27,12 @@ class CriticalFlowsUITest {
             }
         }
 
-        composeTestRule.onNodeWithText("Masuk").assertIsDisplayed()
+        // Cari tombol login, scroll jika perlu
+        composeTestRule.onNodeWithText("Masuk", useUnmergedTree = true)
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
-    // Critical Flow Test 2: Error muncul saat login dengan field kosong
     @Test
     fun loginScreen_showsErrorWhenFieldsAreEmpty() {
         composeTestRule.setContent {
@@ -41,13 +42,16 @@ class CriticalFlowsUITest {
         }
 
         // Tap login tanpa mengisi apapun
-        composeTestRule.onNodeWithText("Masuk").performClick()
+        composeTestRule.onNodeWithText("Masuk", useUnmergedTree = true)
+            .performScrollTo()
+            .performClick()
 
         // Error message dari LoginViewModel: "Email dan password harus diisi"
-        composeTestRule.onNodeWithText("Email dan password harus diisi").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Email dan password harus diisi")
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
-    // Critical Flow Test 3: User bisa input email
     @Test
     fun loginScreen_canTypeEmail() {
         composeTestRule.setContent {
@@ -56,13 +60,14 @@ class CriticalFlowsUITest {
             }
         }
 
-        composeTestRule.onNodeWithText("Email").performTextInput("admin@hmif.itera.ac.id")
-        // Verifikasi field email menerima input
-        // TextFieldValue might have some internal structure, but usually assertTextContains works better
-        composeTestRule.onNodeWithText("Email").assertTextContains("admin@hmif.itera.ac.id")
+        composeTestRule.onNodeWithText("Email")
+            .performScrollTo()
+            .performTextInput("admin@hmif.itera.ac.id")
+            
+        composeTestRule.onNodeWithText("Email")
+            .assertTextContains("admin@hmif.itera.ac.id")
     }
 
-    // Critical Flow Test 4: Password field tampil
     @Test
     fun loginScreen_passwordFieldIsDisplayed() {
         composeTestRule.setContent {
@@ -71,10 +76,11 @@ class CriticalFlowsUITest {
             }
         }
 
-        composeTestRule.onNodeWithText("Password").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Password")
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
-    // Critical Flow Test 5: Header branding InventRa tampil
     @Test
     fun loginScreen_showsInventRaBranding() {
         composeTestRule.setContent {
