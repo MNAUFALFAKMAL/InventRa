@@ -1,6 +1,7 @@
 package com.example.inventra.presentation.screens.auth
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -30,6 +31,8 @@ import com.example.inventra.core.localization.Language
 import com.example.inventra.core.localization.LocalLanguage
 import com.example.inventra.data.local.datastore.UserPreferences
 import com.example.inventra.presentation.theme.LocalThemeIsDark
+import inventra.composeapp.generated.resources.Res
+import inventra.composeapp.generated.resources.logo_hmif
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -124,11 +127,11 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 // Header
-                Icon(
-                    imageVector = Icons.Default.Inventory,
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                // Logo HMIF
+                Image(
+                    painter = org.jetbrains.compose.resources.painterResource(Res.drawable.logo_hmif),
+                    contentDescription = "Logo HMIF",
+                    modifier = Modifier.size(100.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
