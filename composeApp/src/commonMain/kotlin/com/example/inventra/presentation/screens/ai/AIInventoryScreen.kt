@@ -38,7 +38,7 @@ fun AIInventoryScreen(
                     Text(
                         strings.aiInventoryAssistant,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 navigationIcon = {

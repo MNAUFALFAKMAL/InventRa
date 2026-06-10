@@ -82,7 +82,7 @@ fun HistoryScreen(
                     Text(
                         strings.borrowing,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

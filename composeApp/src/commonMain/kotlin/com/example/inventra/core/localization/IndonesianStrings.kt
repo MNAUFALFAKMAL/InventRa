@@ -155,7 +155,7 @@ object IndonesianStrings : Strings {
     override val returnProofDesc = "Ambil foto bukti pengembalian atau pilih dari galeri."
     override val close = "Tutup"
     override val adminHead = "Kepala Divisi"
-    override val members = "Anggota & Staff"
+    override val members = "Staff"
     override val noMembers = "Belum ada anggota terdaftar."
     override val createAndManageAccountDesc = "Buat dan kelola akun anggota divisi"
     override val resetDataDesc = "Hapus seluruh item dan riwayat peminjaman"
