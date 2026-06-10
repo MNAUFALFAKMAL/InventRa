@@ -72,7 +72,7 @@ fun DashboardScreen(
         bottomBar = {
             InventRaBottomNav(currentRoute = currentRoute, onNavigate = onNavigate)
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         AnimatedContent(
             targetState = uiState,
@@ -209,8 +209,8 @@ private fun DashboardContent(
                     Button(
                         onClick = onNavigateToAddItem,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) { Text(strings.getStarted, fontWeight = FontWeight.Bold) }
                 }

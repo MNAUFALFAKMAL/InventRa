@@ -67,7 +67,10 @@ fun CatalogScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                )
             )
         },
         floatingActionButton = {
@@ -84,7 +87,7 @@ fun CatalogScreen(
         bottomBar = {
             InventRaBottomNav(currentRoute = currentRoute, onNavigate = onNavigate)
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = androidx.compose.ui.graphics.Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier

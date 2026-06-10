@@ -250,11 +250,13 @@ fun ProfileScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                )
             )
         },
         bottomBar = { InventRaBottomNav(currentRoute = currentRoute, onNavigate = onNavigate) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
 
         if (uiState.isLoading) {
@@ -321,9 +323,9 @@ fun ProfileScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (uiState.isSaving) {
-                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                         } else {
-                            Icon(Icons.Default.CameraAlt, strings.changePhoto, tint = Color.White,
+                            Icon(Icons.Default.CameraAlt, strings.changePhoto, tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(18.dp))
                         }
                     }
@@ -347,7 +349,7 @@ fun ProfileScreen(
             if (isBendaharaUmum) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp)) {
-                        Text("BENDAHARA UMUM", style = MaterialTheme.typography.labelSmall, color = Color.White,
+                        Text("BENDAHARA UMUM", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                     }
@@ -595,7 +597,7 @@ private fun DivisionInfoCard(user: User?, strings: Strings) {
                 modifier = Modifier.padding(bottom = 6.dp))
             
             if (user.divisionHead.isNullOrBlank()) {
-                Text("- Belum diisi -", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("- Belum diisi -", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
             } else {
                 Surface(color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -603,7 +605,7 @@ private fun DivisionInfoCard(user: User?, strings: Strings) {
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(32.dp)) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(if (isBendaharaUmum) Icons.Default.Person else Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Icon(if (isBendaharaUmum) Icons.Default.Person else Icons.Default.Star, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                             }
                         }
                         Spacer(Modifier.width(10.dp))

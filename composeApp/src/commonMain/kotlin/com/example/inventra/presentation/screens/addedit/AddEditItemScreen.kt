@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -86,7 +87,7 @@ fun AddEditItemScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                 )
             )
         },
@@ -109,7 +110,7 @@ fun AddEditItemScreen(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -240,13 +241,13 @@ fun AddEditItemScreen(
                                 Icon(
                                     Icons.Default.Edit,
                                     null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    tint = androidx.compose.ui.graphics.Color.White,
                                     modifier = Modifier.size(32.dp)
                                 )
                                 Text(
                                     strings.changePhoto,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = androidx.compose.ui.graphics.Color.White
                                 )
                             }
                         }

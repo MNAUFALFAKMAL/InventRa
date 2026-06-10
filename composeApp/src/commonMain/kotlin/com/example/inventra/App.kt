@@ -22,9 +22,12 @@ import com.example.inventra.core.localization.Language
 import com.example.inventra.core.localization.LocalLanguage
 import com.example.inventra.core.localization.ProvideStrings
 import com.example.inventra.data.local.datastore.UserPreferences
+import com.example.inventra.presentation.components.AppBackground
 import com.example.inventra.presentation.navigation.AppNavHost
 import com.example.inventra.presentation.theme.InventRaTheme
 import com.example.inventra.presentation.theme.LocalThemeIsDark
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import org.koin.compose.getKoin
 
 @Composable
@@ -52,9 +55,7 @@ fun App() {
     ) {
         ProvideStrings(language = languageState.value) {
             InventRaTheme(darkTheme = isDarkThemeState.value) {
-                Surface(
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.background
-                ) {
+                AppBackground(isDark = isDarkThemeState.value) {
                     AppNavHost()
                 }
             }

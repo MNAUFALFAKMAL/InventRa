@@ -45,7 +45,7 @@ fun ItemCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
-                    .background(Color.LightGray, RoundedCornerShape(8.dp)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!imageUrl.isNullOrBlank()) {
@@ -59,7 +59,7 @@ fun ItemCard(
                     Icon(
                         Icons.Default.Error, // Atau placeholder lain
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(32.dp)
                     )
                 }

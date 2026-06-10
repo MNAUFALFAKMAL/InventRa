@@ -67,6 +67,7 @@ fun LoginScreen(
     var selectedDivision by remember { mutableStateOf("Bendahara Umum") }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = {},
@@ -116,7 +117,7 @@ fun LoginScreen(
     ) { padding ->
         Surface(
             modifier = Modifier.fillMaxSize().padding(padding),
-            color = MaterialTheme.colorScheme.background
+            color = Color.Transparent
         ) {
             Column(
                 modifier = Modifier
@@ -337,7 +338,7 @@ fun LoginScreen(
                             if (uiState.isLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSecondary,
                                     strokeWidth = 2.dp
                                 )
                             } else {

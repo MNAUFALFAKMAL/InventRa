@@ -42,32 +42,45 @@ private val DarkError = Color(0xFFFFB4AB)
 
 private val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
+    onPrimary = Color.White,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
     secondary = LightSecondary,
+    onSecondary = Color.White,
     secondaryContainer = LightSecondaryContainer,
     onSecondaryContainer = LightOnSecondaryContainer,
     tertiary = LightTertiary,
+    onTertiary = Color.White,
     tertiaryContainer = LightTertiaryContainer,
     background = LightBackground,
+    onBackground = Color(0xFF1A1C1E),
     surface = LightSurface,
+    onSurface = Color(0xFF1A1C1E),
     surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = Color(0xFF43474E),
     outline = LightOutline,
-    error = LightError
+    error = LightError,
+    onError = Color.White
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
+    onPrimary = Color(0xFF003355),
     primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkOnPrimaryContainer,
     secondary = DarkSecondary,
+    onSecondary = Color(0xFF383100),
     secondaryContainer = DarkSecondaryContainer,
     onSecondaryContainer = DarkOnSecondaryContainer,
     background = DarkBackground,
+    onBackground = Color(0xFFE2E2E6),
     surface = DarkSurface,
+    onSurface = Color(0xFFE2E2E6),
     surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = Color(0xFFC3C7CF),
     outline = DarkOutline,
-    error = DarkError
+    error = DarkError,
+    onError = Color(0xFF690005)
 )
 
 @Composable
