@@ -173,9 +173,10 @@ class ItemRepositoryImpl(
         // 1. Hapus local SQLDelight
         queries.deleteAll()
 
-        // 2. Hapus Supabase - gunakan filter yang always true
+        // 2. Hapus Supabase - gunakan adminClient agar bypass RLS jika perlu
         try {
-            db["items"].delete {
+            val adminDb = SupabaseClientProvider.adminClient.postgrest
+            adminDb["items"].delete {
                 filter { neq("id", "00000000-0000-0000-0000-000000000000") }
             }
         } catch (e: Exception) {
