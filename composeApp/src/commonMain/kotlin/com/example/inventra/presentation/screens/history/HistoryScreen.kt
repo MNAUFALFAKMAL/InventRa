@@ -34,12 +34,40 @@ fun HistoryScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = currentUser?.role == com.example.inventra.domain.model.UserRole.ADMIN
     
+    var showImageSourceOptions by remember { mutableStateOf(false) }
     var recordToReturn by remember { mutableStateOf<Long?>(null) }
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
         recordToReturn?.let { id ->
             viewModel.returnItem(id, bytes, fileName)
             recordToReturn = null
         }
+    }
+
+    if (showImageSourceOptions) {
+        AlertDialog(
+            onDismissRequest = { 
+                showImageSourceOptions = false
+                recordToReturn = null 
+            },
+            title = { Text("Bukti Pengembalian") },
+            text = { Text("Ambil foto bukti pengembalian atau pilih dari galeri.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.takePhoto()
+                }) {
+                    Text("Kamera")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.pickImage()
+                }) {
+                    Text("Galeri")
+                }
+            }
+        )
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -205,7 +233,7 @@ fun HistoryScreen(
                                         record.status == BorrowStatus.OVERDUE) {
                                         { 
                                             recordToReturn = record.id
-                                            imagePicker.launch() 
+                                            showImageSourceOptions = true
                                         }
                                     } else null
                                 )

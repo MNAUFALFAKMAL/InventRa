@@ -168,8 +168,33 @@ fun ProfileScreen(
     val isDarkTheme = LocalThemeIsDark.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var showImageSourceOptions by remember { mutableStateOf(false) }
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
         viewModel.uploadAvatar(bytes, fileName)
+    }
+
+    if (showImageSourceOptions) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceOptions = false },
+            title = { Text("Pilih Sumber Foto") },
+            text = { Text("Ambil foto dari kamera atau pilih dari galeri.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.takePhoto()
+                }) {
+                    Text("Kamera")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.pickImage()
+                }) {
+                    Text("Galeri")
+                }
+            }
+        )
     }
 
     LaunchedEffect(uiState.successMessage, uiState.error) {
@@ -260,7 +285,7 @@ fun ProfileScreen(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp).clickable { imagePicker.launch() }
+                    modifier = Modifier.size(32.dp).clickable { showImageSourceOptions = true }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (uiState.isSaving) {

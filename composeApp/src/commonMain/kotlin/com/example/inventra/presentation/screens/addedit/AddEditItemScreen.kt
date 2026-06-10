@@ -37,9 +37,34 @@ fun AddEditItemScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
+    var showImageSourceOptions by remember { mutableStateOf(false) }
     // Image picker dari galeri HP — harus di level Composable, bukan di dalam onClick
     val imagePicker = rememberImagePickerLauncher { bytes, fileName ->
         viewModel.uploadAndSaveImage(bytes, fileName)
+    }
+
+    if (showImageSourceOptions) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceOptions = false },
+            title = { Text("Pilih Sumber Foto") },
+            text = { Text("Ambil foto dari kamera atau pilih dari galeri.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.takePhoto()
+                }) {
+                    Text("Kamera")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceOptions = false
+                    imagePicker.pickImage()
+                }) {
+                    Text("Galeri")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -174,7 +199,7 @@ fun AddEditItemScreen(
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(enabled = !uiState.isSaving) { imagePicker.launch() },
+                    .clickable(enabled = !uiState.isSaving) { showImageSourceOptions = true },
                 contentAlignment = Alignment.Center
             ) {
                 when {
@@ -234,7 +259,7 @@ fun AddEditItemScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "Tap untuk pilih dari galeri",
+                                "Tap untuk ambil foto / pilih dari galeri",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )

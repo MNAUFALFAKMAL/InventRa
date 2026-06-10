@@ -7,7 +7,8 @@ import androidx.compose.runtime.Composable
  * Implementasi per platform via expect/actual.
  */
 interface ImagePickerLauncher {
-    fun launch()
+    fun pickImage()
+    fun takePhoto()
 }
 
 /**

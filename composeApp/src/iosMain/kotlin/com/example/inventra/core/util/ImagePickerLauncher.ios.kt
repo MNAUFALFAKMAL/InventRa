@@ -7,13 +7,13 @@ import androidx.compose.runtime.remember
 actual fun rememberImagePickerLauncher(
     onImagePicked: (ByteArray, String) -> Unit
 ): ImagePickerLauncher {
-    // iOS: placeholder — implementasi UIImagePickerController membutuhkan
-    // UIViewController yang belum tersedia langsung dari Compose Multiplatform.
-    // Untuk saat ini mengembalikan launcher kosong.
     return remember {
         object : ImagePickerLauncher {
-            override fun launch() {
-                println("ImagePicker: iOS not implemented yet")
+            override fun pickImage() {
+                println("ImagePicker: iOS pickImage not implemented")
+            }
+            override fun takePhoto() {
+                println("ImagePicker: iOS takePhoto not implemented")
             }
         }
     }
