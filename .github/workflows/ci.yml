@@ -104,7 +104,7 @@ jobs:
           files: |
             InventRa-release.apk
             InventRa-iOS-Framework.zip
-          name: InventRa v1.0.0
+          name: InventRa App
           body: |
             ## 📦 InventRa Stable Release
             
