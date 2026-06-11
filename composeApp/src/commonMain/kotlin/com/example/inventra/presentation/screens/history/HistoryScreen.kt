@@ -1,5 +1,6 @@
 package com.example.inventra.presentation.screens.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,10 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.example.inventra.core.localization.AppStrings
 import com.example.inventra.domain.model.BorrowRecord
 import com.example.inventra.domain.model.BorrowStatus
@@ -75,6 +79,24 @@ fun HistoryScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf(strings.pending, strings.active, strings.all)
+    var showFullImageProofUrl by remember { mutableStateOf<String?>(null) }
+
+    if (showFullImageProofUrl != null) {
+        AlertDialog(
+            onDismissRequest = { showFullImageProofUrl = null },
+            text = {
+                AsyncImage(
+                    model = showFullImageProofUrl,
+                    contentDescription = "Bukti Pengembalian",
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showFullImageProofUrl = null }) { Text(strings.close) }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -230,6 +252,7 @@ fun HistoryScreen(
                             ) { record ->
                                 BorrowRecordCard(
                                     record = record,
+                                    isAdmin = isAdmin,
                                     onApprove = if (isAdmin && record.status == BorrowStatus.PENDING) {
                                         { viewModel.approveRequest(record.id) }
                                     } else null,
@@ -242,7 +265,8 @@ fun HistoryScreen(
                                             recordToReturn = record.id
                                             showImageSourceOptions = true
                                         }
-                                    } else null
+                                    } else null,
+                                    onViewProof = { url -> showFullImageProofUrl = url }
                                 )
                             }
                         }
@@ -256,9 +280,11 @@ fun HistoryScreen(
 @Composable
 private fun BorrowRecordCard(
     record: BorrowRecord,
+    isAdmin: Boolean = false,
     onApprove: (() -> Unit)? = null,
     onApproveReturn: (() -> Unit)? = null,
-    onReturn: (() -> Unit)? = null
+    onReturn: (() -> Unit)? = null,
+    onViewProof: (String) -> Unit = {}
 ) {
     val isOverdue = record.status == BorrowStatus.OVERDUE
     val isReturned = record.status == BorrowStatus.RETURNED
@@ -345,6 +371,29 @@ private fun BorrowRecordCard(
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    // Bukti Pengembalian untuk Admin
+                    if (isAdmin && !record.returnProofUrl.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedCard(
+                            onClick = { onViewProof(record.returnProofUrl) },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(60.dp)
+                        ) {
+                            AsyncImage(
+                                model = record.returnProofUrl,
+                                contentDescription = "Proof",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Text(
+                            "Lihat Bukti Foto",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { onViewProof(record.returnProofUrl) }
                         )
                     }
                 }

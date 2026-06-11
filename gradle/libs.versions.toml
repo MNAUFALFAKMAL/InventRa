@@ -18,7 +18,7 @@ supabase = "3.0.2"
 # Testing
 turbine = "1.2.0"
 # FIX: Tambahkan versi untuk androidTest dependencies
-androidx-compose-ui = "1.7.6"
+androidx-compose-ui = "1.11.2"
 androidx-test-ext = "1.1.5"
 androidx-test-runner = "1.5.2"
 

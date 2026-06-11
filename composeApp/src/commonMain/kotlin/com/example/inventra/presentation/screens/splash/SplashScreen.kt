@@ -1,11 +1,9 @@
 package com.example.inventra.presentation.screens.splash
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,7 +13,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import inventra.composeapp.generated.resources.Res
+import inventra.composeapp.generated.resources.logo_app_inventra
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * SplashScreen dengan fade + scale animation.
@@ -50,7 +51,8 @@ fun SplashScreen(
 
     Box(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -59,45 +61,40 @@ fun SplashScreen(
                 .alpha(alpha.value)
                 .scale(scale.value)
         ) {
-            Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(96.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory,
-                        contentDescription = "InventRa Logo",
-                        modifier = Modifier.size(56.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
+            // Logo Utama (Sama dengan ikon aplikasi agar seamless)
+            Image(
+                painter = painterResource(Res.drawable.logo_app_inventra),
+                contentDescription = null,
+                modifier = Modifier.size(140.dp)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Nama Aplikasi
             Text(
                 text = "InventRa",
-                fontSize = 36.sp,
+                fontSize = 42.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 2.sp
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Inventaris HMIF ITERA",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f),
+                letterSpacing = 1.sp
             )
         }
+
+        // Loading halus di bagian bawah
+        CircularProgressIndicator(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+                .size(24.dp),
+            strokeWidth = 2.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        )
     }
 }
