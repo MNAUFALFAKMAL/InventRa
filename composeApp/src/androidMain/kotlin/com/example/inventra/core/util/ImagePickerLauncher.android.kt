@@ -1,14 +1,18 @@
 package com.example.inventra.core.util
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -54,6 +58,17 @@ actual fun rememberImagePickerLauncher(
         }
     }
 
+    // Permission Launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(tempUri)
+        } else {
+            Toast.makeText(context, "Izin kamera ditolak", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     return remember {
         object : ImagePickerLauncher {
             override fun pickImage() {
@@ -61,7 +76,12 @@ actual fun rememberImagePickerLauncher(
             }
 
             override fun takePhoto() {
-                cameraLauncher.launch(tempUri)
+                val permission = Manifest.permission.CAMERA
+                if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                    cameraLauncher.launch(tempUri)
+                } else {
+                    permissionLauncher.launch(permission)
+                }
             }
         }
     }
