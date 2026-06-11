@@ -59,15 +59,15 @@ jobs:
       - name: Build iOS Framework
         run: |
           chmod +x gradlew
-          ./gradlew :composeApp:assembleComposeAppReleaseFrameworkIosArm64
+          ./gradlew :composeApp:assembleRelease --stacktrace
 
       - name: Zip iOS Framework
         run: |
-          cd composeApp/build/fat-framework/release
-          zip -r InventRa-iOS-Framework.zip .
-
+          # Cari folder framework hasil build secara otomatis
+          find composeApp/build/bin/iosArm64/releaseFramework -name "*.framework" -exec zip -r InventRa-iOS-Framework.zip {} +
+          
       - name: Upload iOS Framework
         uses: actions/upload-artifact@v4
         with:
           name: InventRa-iOS
-          path: composeApp/build/fat-framework/release/InventRa-iOS-Framework.zip
+          path: InventRa-iOS-Framework.zip
