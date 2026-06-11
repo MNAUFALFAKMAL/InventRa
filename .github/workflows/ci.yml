@@ -26,10 +26,10 @@ jobs:
       
       - name: Setup local.properties
         run: |
-          echo "GEMINI_API_KEY=dummy_for_ci" >> local.properties
-          echo "SUPABASE_URL=https://dummy.supabase.co" >> local.properties
-          echo "SUPABASE_ANON_KEY=dummy_anon_key" >> local.properties
-          echo "SUPABASE_SERVICE_ROLE_KEY=dummy_service_key" >> local.properties
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> local.properties
 
       - name: Build Android Release APK
         run: |
@@ -60,10 +60,10 @@ jobs:
       
       - name: Setup local.properties
         run: |
-          echo "GEMINI_API_KEY=dummy_for_ci" >> local.properties
-          echo "SUPABASE_URL=https://dummy.supabase.co" >> local.properties
-          echo "SUPABASE_ANON_KEY=dummy_anon_key" >> local.properties
-          echo "SUPABASE_SERVICE_ROLE_KEY=dummy_service_key" >> local.properties
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> local.properties
 
       - name: Build iOS Framework
         run: |
@@ -85,9 +85,9 @@ jobs:
           path: InventRa-iOS-Framework.zip
           if-no-files-found: warn
 
-  release:
-    name: Create GitHub Release
-    needs: [build-android, build-ios]
+  release-android:
+    name: Release Android APK
+    needs: [build-android]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -99,19 +99,10 @@ jobs:
           name: InventRa-Android
           path: .
 
-      - name: Download iOS Framework
-        uses: actions/download-artifact@v4
-        with:
-          name: InventRa-iOS
-          path: .
-        continue-on-error: true # Agar tetap rilis APK Android jika iOS gagal
-
-      - name: Create Release
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            *.apk
-            *.zip
+          files: "*.apk"
           name: InventRa App
           body: |
             ## 📦 InventRa Stable Release
@@ -127,9 +118,30 @@ jobs:
             1. Unduh `InventRa-release.apk`.
             2. Instal di perangkat Android Anda.
             
-            ### 🍎 Catatan iOS
-            Untuk iOS, kami menyediakan `InventRa-iOS-Framework.zip`. File ini adalah framework untuk digunakan oleh developer di Xcode. (File `.ipa` memerlukan akun Apple Developer resmi).
+            *Catatan: File iOS sedang dalam proses build dan akan muncul otomatis di sini jika sudah selesai.*
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-ios:
+    name: Attach iOS Framework
+    needs: [build-ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download iOS Framework
+        uses: actions/download-artifact@v4
+        with:
+          name: InventRa-iOS
+          path: .
+
+      - name: Update Release with iOS
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.zip"
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
