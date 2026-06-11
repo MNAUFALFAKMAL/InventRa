@@ -8,10 +8,6 @@ on:
   pull_request:
     branches: [ main, develop ]
 
-env:
-  # Menghilangkan warning Node.js 20 sesuai saran log GitHub
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build-android:
     name: Build Android APK
@@ -24,7 +20,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          # Menambahkan cache untuk Gradle agar build lebih cepat
           cache: 'gradle'
       
       - name: Setup local.properties
@@ -37,7 +32,7 @@ jobs:
       - name: Build Android Release APK
         run: |
           chmod +x gradlew
-          ./gradlew :composeApp:assembleRelease --stacktrace
+          ./gradlew :composeApp:assembleRelease --no-daemon --stacktrace
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -68,7 +63,7 @@ jobs:
       - name: Build iOS Framework
         run: |
           chmod +x gradlew
-          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon --stacktrace
 
       - name: Zip iOS Framework
         run: |
