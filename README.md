@@ -113,7 +113,7 @@ Aplikasi ini mengimplementasikan **Clean Architecture** (Data, Domain, Presentat
 ## 📲 Download & Setup
 
 ### User
-1. Unduh **InventRa.apk** dari folder release.
+1. Unduh **InventRa.apk** dari halaman [Releases](https://github.com/MNAUFALFAKMAL/InventRa/releases).
 2. Instal di perangkat Android (API 24+).
 
 ### Developer

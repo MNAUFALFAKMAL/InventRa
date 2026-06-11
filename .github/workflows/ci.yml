@@ -73,10 +73,55 @@ jobs:
 
       - name: Zip iOS Framework
         run: |
-          find composeApp/build -name "*.framework" -type d -exec zip -r InventRa-iOS-Framework.zip {} +
+          cd composeApp/build/bin/iosArm64/releaseFramework/
+          zip -r ../../../../InventRa-iOS-Framework.zip ComposeApp.framework
           
       - name: Upload iOS Framework
         uses: actions/upload-artifact@v4
         with:
           name: InventRa-iOS
           path: InventRa-iOS-Framework.zip
+
+  release:
+    name: Create GitHub Release
+    needs: [build-android, build-ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: InventRa-Android
+
+      - name: Download iOS Framework
+        uses: actions/download-artifact@v4
+        with:
+          name: InventRa-iOS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            InventRa-release.apk
+            InventRa-iOS-Framework.zip
+          name: InventRa v1.0.0
+          body: |
+            ## 📦 InventRa Stable Release
+            
+            Solusi inventaris digital cerdas untuk HMIF ITERA.
+            
+            ### ✨ Fitur Utama
+            - 🤖 **AI Assistant** (Google Gemini)
+            - 🔄 **Hybrid Sync** (SQLDelight + Supabase)
+            - 🔐 **Multi-Role Access** (Admin & Member)
+            
+            ### 📲 Instalasi Android
+            1. Unduh `InventRa-release.apk`.
+            2. Instal di perangkat Android Anda.
+            
+            ### 🍎 Catatan iOS
+            Untuk iOS, kami menyediakan `InventRa-iOS-Framework.zip`. File ini adalah framework untuk digunakan oleh developer di Xcode. (File `.ipa` memerlukan akun Apple Developer resmi).
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
