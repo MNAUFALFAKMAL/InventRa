@@ -167,9 +167,8 @@ android {
                 val f = rootProject.file("local.properties")
                 if (f.exists()) load(f.inputStream())
             }
-            storeFile = localProps.getProperty("KEYSTORE_PATH")
-                ?.let { file(it) }
-                ?: file("release.jks") // fallback untuk CI
+            val keystorePath = localProps.getProperty("KEYSTORE_PATH", "release.jks")
+            storeFile = rootProject.file(keystorePath)
             storePassword = localProps.getProperty("KEYSTORE_PASSWORD", "")
             keyAlias = localProps.getProperty("KEY_ALIAS", "inventra")
             keyPassword = localProps.getProperty("KEY_PASSWORD", "")
