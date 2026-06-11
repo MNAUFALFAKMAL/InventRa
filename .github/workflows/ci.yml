@@ -32,7 +32,10 @@ jobs:
       - name: Build Android Release APK
         run: |
           chmod +x gradlew
-          ./gradlew :composeApp:assembleRelease --no-daemon --stacktrace
+          ./gradlew :composeApp:assembleRelease --no-daemon --quiet --stacktrace
+      
+      - name: Stop Gradle
+        run: ./gradlew --stop
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -63,7 +66,10 @@ jobs:
       - name: Build iOS Framework
         run: |
           chmod +x gradlew
-          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon --stacktrace
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon --quiet --stacktrace
+
+      - name: Stop Gradle
+        run: ./gradlew --stop
 
       - name: Zip iOS Framework
         run: |

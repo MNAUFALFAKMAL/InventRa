@@ -40,8 +40,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
-// ==================== UI STATE ====================
-
 data class ProfileUiState(
     val user: User? = null,
     val isLoading: Boolean = true,
@@ -56,8 +54,6 @@ data class ProfileUiState(
     val divisionMembers: List<User> = emptyList(),
     val isLoadingMembers: Boolean = false
 )
-
-// ==================== VIEWMODEL ====================
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
@@ -182,8 +178,6 @@ class ProfileViewModel(
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
 }
-
-// ==================== SCREEN ====================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -413,14 +407,12 @@ fun ProfileScreen(
             )
             Spacer(Modifier.height(16.dp))
 
-            // ── Settings ──────────────────────────────────────────────────
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp)) {
                     Text(strings.settings, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp))
                     
-                    // Dark Mode
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween) {
@@ -496,7 +488,6 @@ fun ProfileScreen(
                 }
             }
 
-            // ── Admin: Manajemen Akun ──────────────────────────────────────
             if (user?.role == UserRole.ADMIN) {
                 var showResetDialog by remember { mutableStateOf(false) }
 
@@ -573,10 +564,9 @@ fun ProfileScreen(
                 Text(strings.logout, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(24.dp))
-            // Version info — hanya render di Android (expect/actual jika perlu, atau gunakan kondisional platform)
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "InventRa v1.0.0",  // hardcode untuk KMP compatibility
+                text = "InventRa v1.0.0",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -585,8 +575,6 @@ fun ProfileScreen(
         }
     }
 }
-
-// ── Division Info Card ────────────────────────────────────────────────────────
 
 @Composable
 private fun DivisionInfoCard(user: User?, strings: Strings) {
@@ -609,7 +597,6 @@ private fun DivisionInfoCard(user: User?, strings: Strings) {
             }
             Spacer(Modifier.height(12.dp))
             
-            // ── LAYER 1: Kepala Divisi / Bendahara Umum ──
             val headLabel = if (isBendaharaUmum) "Bendahara Umum" else strings.adminHead
             
             Text(headLabel, style = MaterialTheme.typography.labelMedium,
@@ -637,7 +624,6 @@ private fun DivisionInfoCard(user: User?, strings: Strings) {
             }
             Spacer(Modifier.height(12.dp))
 
-            // ── LAYER 2: Anggota & Staff ──
             Text(
                 if (isBendaharaUmum) "Daftar Staff" else strings.members, 
                 style = MaterialTheme.typography.labelMedium,
