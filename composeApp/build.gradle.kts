@@ -205,6 +205,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            output.outputFileName = "InventRa-${name}.apk"
+        }
+    }
 }
 
 sqldelight {
