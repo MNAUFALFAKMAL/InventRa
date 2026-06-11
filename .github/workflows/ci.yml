@@ -4,9 +4,13 @@ on:
   push:
     branches: [ main, develop, 'project/123140062_123140132_InventRa', 'sprint5' ]
     tags:
-      - 'v*' # Menjalankan build saat Anda membuat tag versi seperti v1.0.0
+      - 'v*'
   pull_request:
     branches: [ main, develop ]
+
+env:
+  # Menghilangkan warning Node.js 20 sesuai saran log GitHub
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-android:
@@ -14,11 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          # Menambahkan cache untuk Gradle agar build lebih cepat
+          cache: 'gradle'
       
       - name: Setup local.properties
         run: |
@@ -43,11 +50,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
       
       - name: Setup local.properties
         run: |
@@ -63,7 +72,6 @@ jobs:
 
       - name: Zip iOS Framework
         run: |
-          # Mencari semua folder .framework di dalam folder build dan men-zip nya
           find composeApp/build -name "*.framework" -type d -exec zip -r InventRa-iOS-Framework.zip {} +
           
       - name: Upload iOS Framework
