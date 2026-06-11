@@ -1,13 +1,16 @@
-name: CI
+name: Build and Release InventRa
 
 on:
   push:
     branches: [ main, develop, 'project/123140062_123140132_InventRa', 'sprint5' ]
+    tags:
+      - 'v*' # Menjalankan build saat Anda membuat tag versi seperti v1.0.0
   pull_request:
     branches: [ main, develop ]
 
 jobs:
-  build:
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,16 +19,55 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      
       - name: Setup local.properties
         run: |
           echo "GEMINI_API_KEY=dummy_for_ci" >> local.properties
           echo "SUPABASE_URL=https://dummy.supabase.co" >> local.properties
           echo "SUPABASE_ANON_KEY=dummy_anon_key" >> local.properties
           echo "SUPABASE_SERVICE_ROLE_KEY=dummy_service_key" >> local.properties
-      - name: Build with Gradle
+
+      - name: Build Android Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-      - name: Run Unit Tests
+          ./gradlew :composeApp:assembleRelease --stacktrace
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: InventRa-Android
+          path: composeApp/build/outputs/apk/release/InventRa-release.apk
+
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup local.properties
         run: |
-          ./gradlew :composeApp:testDebugUnitTest --stacktrace
+          echo "GEMINI_API_KEY=dummy_for_ci" >> local.properties
+          echo "SUPABASE_URL=https://dummy.supabase.co" >> local.properties
+          echo "SUPABASE_ANON_KEY=dummy_anon_key" >> local.properties
+          echo "SUPABASE_SERVICE_ROLE_KEY=dummy_service_key" >> local.properties
+
+      - name: Build iOS Framework
+        run: |
+          chmod +x gradlew
+          ./gradlew :composeApp:assembleComposeAppReleaseFrameworkIosArm64
+
+      - name: Zip iOS Framework
+        run: |
+          cd composeApp/build/fat-framework/release
+          zip -r InventRa-iOS-Framework.zip .
+
+      - name: Upload iOS Framework
+        uses: actions/upload-artifact@v4
+        with:
+          name: InventRa-iOS
+          path: composeApp/build/fat-framework/release/InventRa-iOS-Framework.zip
