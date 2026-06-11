@@ -44,6 +44,7 @@ data class UserManagementUiState(
     // Form fields
     val newName: String = "",
     val newEmail: String = "",
+    val newStudentId: String = "",
     val newPassword: String = "",
     val newDivision: UserDivision = UserDivision.PUBDOK,
     val newRole: UserRole = UserRole.MEMBER
@@ -82,6 +83,7 @@ class UserManagementViewModel(
 
     fun onNewNameChange(v: String) = _uiState.update { it.copy(newName = v) }
     fun onNewEmailChange(v: String) = _uiState.update { it.copy(newEmail = v) }
+    fun onNewStudentIdChange(v: String) = _uiState.update { it.copy(newStudentId = v) }
     fun onNewPasswordChange(v: String) = _uiState.update { it.copy(newPassword = v) }
     
     fun onNewDivisionChange(v: UserDivision) {
@@ -113,7 +115,8 @@ class UserManagementViewModel(
                 password = state.newPassword,
                 name = state.newName.trim(),
                 division = state.newDivision.name,
-                role = state.newRole.name
+                role = state.newRole.name,
+                studentId = state.newStudentId.trim().ifBlank { null }
             ).onSuccess {
                 _uiState.update {
                     it.copy(
@@ -154,12 +157,13 @@ class UserManagementViewModel(
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
 
-    fun editUser(userId: String, newName: String, newEmail: String) {
+    fun editUser(userId: String, newName: String, newEmail: String, newStudentId: String) {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             try {
                 authRepository.updateUserName(userId, newName).getOrThrow()
                 authRepository.updateUserEmail(userId, newEmail).getOrThrow()
+                authRepository.updateUserStudentId(userId, newStudentId.ifBlank { null }).getOrThrow()
                 _uiState.update { it.copy(successMessage = "Data akun berhasil diperbarui", isLoading = false) }
                 loadUsers()
             } catch (e: Exception) {
@@ -189,6 +193,7 @@ class UserManagementViewModel(
 @Composable
 fun UserManagementScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
     viewModel: UserManagementViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -308,8 +313,9 @@ fun UserManagementScreen(
                             user = user,
                             onDelete = { viewModel.deleteUser(user.id, user.name) },
                             onToggleRole = { viewModel.toggleRole(user) },
-                            onEdit = { name, email -> viewModel.editUser(user.id, name, email) },
+                            onEdit = { name, email, studentId -> viewModel.editUser(user.id, name, email, studentId) },
                             onEditPassword = { pass -> viewModel.editPassword(user.id, pass) },
+                            onClick = { onNavigateToDetail(user.id) },
                             uriHandler = uriHandler
                         )
                     }
@@ -327,6 +333,7 @@ fun UserManagementScreen(
             onRegister = viewModel::registerUser,
             onNameChange = viewModel::onNewNameChange,
             onEmailChange = viewModel::onNewEmailChange,
+            onStudentIdChange = viewModel::onNewStudentIdChange,
             onPasswordChange = viewModel::onNewPasswordChange,
             onDivisionChange = viewModel::onNewDivisionChange,
             onRoleChange = viewModel::onNewRoleChange
@@ -341,8 +348,9 @@ private fun UserCard(
     user: User,
     onDelete: () -> Unit,
     onToggleRole: () -> Unit,
-    onEdit: (name: String, email: String) -> Unit,
+    onEdit: (name: String, email: String, studentId: String) -> Unit,
     onEditPassword: (String) -> Unit,
+    onClick: () -> Unit,
     uriHandler: androidx.compose.ui.platform.UriHandler
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -351,12 +359,13 @@ private fun UserCard(
     
     var editNameValue by remember { mutableStateOf(user.name) }
     var editEmailValue by remember { mutableStateOf(user.email) }
+    var editStudentIdValue by remember { mutableStateOf(user.studentId ?: "") }
     var newPasswordValue by remember { mutableStateOf("") }
     
     val isAdmin = user.role == UserRole.ADMIN
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isAdmin)
@@ -399,15 +408,13 @@ private fun UserCard(
                     Text(user.division.displayName, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline)
                     
-                    Text(
-                        text = user.email,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                        modifier = Modifier.clickable {
-                            uriHandler.openUri("mailto:${user.email}")
-                        }
-                    )
+                    if (!user.studentId.isNullOrBlank()) {
+                        Text(
+                            text = user.studentId,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
 
                     if (!user.phone.isNullOrBlank()) {
                         Text(
@@ -436,6 +443,7 @@ private fun UserCard(
                 IconButton(onClick = { 
                     editNameValue = user.name
                     editEmailValue = user.email
+                    editStudentIdValue = user.studentId ?: ""
                     showEditDialog = true 
                 }, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Default.Edit, "Edit", tint = MaterialTheme.colorScheme.secondary,
@@ -474,12 +482,16 @@ private fun UserCard(
                     OutlinedTextField(value = editEmailValue, onValueChange = { editEmailValue = it },
                         label = { Text("Email") }, singleLine = true,
                         shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+
+                    OutlinedTextField(value = editStudentIdValue, onValueChange = { editStudentIdValue = it },
+                        label = { Text("NIM / Student ID") }, singleLine = true,
+                        shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
                 Button(onClick = { 
                     if (editNameValue.isNotBlank() && editEmailValue.isNotBlank()) { 
-                        onEdit(editNameValue.trim(), editEmailValue.trim())
+                        onEdit(editNameValue.trim(), editEmailValue.trim(), editStudentIdValue.trim())
                         showEditDialog = false 
                     } 
                 }) { Text("Simpan") }
@@ -538,6 +550,7 @@ private fun RegisterUserDialog(
     onRegister: () -> Unit,
     onNameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
+    onStudentIdChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onDivisionChange: (UserDivision) -> Unit,
     onRoleChange: (UserRole) -> Unit
@@ -591,6 +604,15 @@ private fun RegisterUserDialog(
                     value = uiState.newEmail,
                     onValueChange = onEmailChange,
                     label = { Text("Email *") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = uiState.newStudentId,
+                    onValueChange = onStudentIdChange,
+                    label = { Text("NIM / Student ID") },
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth()

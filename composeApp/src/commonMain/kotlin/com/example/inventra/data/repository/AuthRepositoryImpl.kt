@@ -65,7 +65,8 @@ class AuthRepositoryImpl(
         password: String,
         name: String,
         division: String,
-        role: String
+        role: String,
+        studentId: String?
     ): Result<User> {
         return try {
             val bodyJson = """
@@ -76,7 +77,8 @@ class AuthRepositoryImpl(
                   "user_metadata": {
                     "name": "$name",
                     "division": "$division",
-                    "role": "$role"
+                    "role": "$role",
+                    "student_id": "${studentId ?: ""}"
                   }
                 }
             """.trimIndent()
@@ -114,6 +116,7 @@ class AuthRepositoryImpl(
                         put("name", name)
                         put("role", role)
                         put("division", division)
+                        if (studentId != null) put("student_id", studentId)
                         put("is_active", true)
                     }
                 )
@@ -127,7 +130,8 @@ class AuthRepositoryImpl(
                     role = try { UserRole.valueOf(role) } catch (e: Exception) { UserRole.MEMBER },
                     division = try {
                         UserDivision.valueOf(division)
-                    } catch (e: Exception) { UserDivision.PUBDOK }
+                    } catch (e: Exception) { UserDivision.PUBDOK },
+                    studentId = studentId
                 )
             )
         } catch (e: Exception) {
@@ -230,7 +234,8 @@ class AuthRepositoryImpl(
         phone: String?, 
         avatarUrl: String?,
         divisionHead: String?,
-        staffList: String?
+        staffList: String?,
+        studentId: String?
     ): Result<User> {
         return try {
             val userId = auth.currentUserOrNull()?.id
@@ -242,6 +247,7 @@ class AuthRepositoryImpl(
                 if (avatarUrl != null) put("avatar_url", avatarUrl)
                 if (divisionHead != null) put("division_head", divisionHead)
                 if (staffList != null) put("staff_list", staffList)
+                if (studentId != null) put("student_id", studentId)
             }
 
             db["profiles"].update(updateData) { filter { eq("id", userId) } }
@@ -277,6 +283,19 @@ class AuthRepositoryImpl(
         } catch (e: Exception) { Result.failure(e) }
     }
 
+    override suspend fun getUserById(userId: String): Result<User> {
+        return try {
+            val profile = db["profiles"].select(columns = Columns.ALL) {
+                filter { eq("id", userId) }
+            }.decodeSingleOrNull<ProfileDto>()
+            if (profile != null) {
+                Result.success(profile.toUser(""))
+            } else {
+                Result.failure(Exception("User tidak ditemukan"))
+            }
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
     override suspend fun deleteUser(userId: String): Result<Unit> {
         return try {
             adminDb["profiles"].delete { filter { eq("id", userId) } }
@@ -306,6 +325,16 @@ class AuthRepositoryImpl(
         return try {
             val updateData = buildJsonObject {
                 put("name", name)
+            }
+            adminDb["profiles"].update(updateData) { filter { eq("id", userId) } }
+            Result.success(Unit)
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    override suspend fun updateUserStudentId(userId: String, studentId: String?): Result<Unit> {
+        return try {
+            val updateData = buildJsonObject {
+                put("student_id", studentId ?: "")
             }
             adminDb["profiles"].update(updateData) { filter { eq("id", userId) } }
             Result.success(Unit)

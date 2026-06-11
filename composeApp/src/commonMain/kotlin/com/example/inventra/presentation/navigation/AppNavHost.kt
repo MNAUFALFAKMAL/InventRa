@@ -22,6 +22,7 @@ import com.example.inventra.presentation.screens.catalog.CatalogScreen
 import com.example.inventra.presentation.screens.dashboard.DashboardScreen
 import com.example.inventra.presentation.screens.detail.ItemDetailScreen
 import com.example.inventra.presentation.screens.history.HistoryScreen
+import com.example.inventra.presentation.screens.management.UserDetailScreen
 import com.example.inventra.presentation.screens.management.UserManagementScreen
 import com.example.inventra.presentation.screens.profile.ProfileScreen
 import com.example.inventra.presentation.screens.splash.SplashScreen
@@ -157,6 +158,17 @@ fun AppNavHost(
 
         composable(Routes.UserManagement.route) {
             UserManagementScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { userId ->
+                    navController.navigate(Routes.UserDetail.createRoute(userId))
+                }
+            )
+        }
+
+        composable(Routes.UserDetail.route) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            UserDetailScreen(
+                userId = userId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

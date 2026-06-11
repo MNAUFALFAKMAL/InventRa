@@ -49,6 +49,7 @@ data class ProfileUiState(
     val isEditMode: Boolean = false,
     val editName: String = "",
     val editPhone: String = "",
+    val editStudentId: String = "",
     val editDivisionHead: String = "",
     val editStaffList: String = "",
     val divisionMembers: List<User> = emptyList(),
@@ -109,6 +110,7 @@ class ProfileViewModel(
                     user = user,
                     editName = user?.name ?: "", 
                     editPhone = user?.phone ?: "",
+                    editStudentId = user?.studentId ?: "",
                     editDivisionHead = user?.divisionHead ?: "",
                     editStaffList = user?.staffList ?: ""
                 )
@@ -133,6 +135,7 @@ class ProfileViewModel(
     fun exitEditMode() = _uiState.update { it.copy(isEditMode = false) }
     fun onNameChange(v: String) = _uiState.update { it.copy(editName = v) }
     fun onPhoneChange(v: String) = _uiState.update { it.copy(editPhone = v) }
+    fun onStudentIdChange(v: String) = _uiState.update { it.copy(editStudentId = v) }
     fun onDivisionHeadChange(v: String) = _uiState.update { it.copy(editDivisionHead = v) }
     fun onStaffListChange(v: String) = _uiState.update { it.copy(editStaffList = v) }
 
@@ -165,7 +168,8 @@ class ProfileViewModel(
                 phone = state.editPhone.ifBlank { null },
                 avatarUrl = null,
                 divisionHead = state.editDivisionHead,
-                staffList = state.editStaffList
+                staffList = state.editStaffList,
+                studentId = state.editStudentId.ifBlank { null }
             ).onSuccess { user ->
                 _uiState.update { it.copy(isSaving = false, isEditMode = false, user = user, successMessage = strings.profileUpdated) }
                 loadProfile() // Re-fetch
@@ -332,6 +336,14 @@ fun ProfileScreen(
             Text(user?.name ?: "Pengguna", style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold)
             
+            if (!user?.studentId.isNullOrBlank()) {
+                Text(
+                    text = user?.studentId ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+            
             if (!user?.phone.isNullOrBlank()) {
                 Text(
                     text = user?.phone ?: "",
@@ -371,6 +383,10 @@ fun ProfileScreen(
                         
                         OutlinedTextField(value = uiState.editName, onValueChange = viewModel::onNameChange,
                             label = { Text(strings.fullName) }, singleLine = true,
+                            shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+
+                        OutlinedTextField(value = uiState.editStudentId, onValueChange = viewModel::onStudentIdChange,
+                            label = { Text("NIM / Student ID") }, singleLine = true,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
                         
                         OutlinedTextField(value = uiState.editPhone, onValueChange = viewModel::onPhoneChange,
