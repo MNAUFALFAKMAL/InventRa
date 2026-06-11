@@ -75,14 +75,15 @@ jobs:
 
       - name: Zip iOS Framework
         run: |
-          cd composeApp/build/bin/iosArm64/releaseFramework/
-          zip -r ../../../../InventRa-iOS-Framework.zip ComposeApp.framework
+          # Mencari framework secara rekursif agar lebih aman
+          find composeApp/build/bin/iosArm64 -name "*.framework" -type d -exec zip -r InventRa-iOS-Framework.zip {} + || echo "Framework not found"
           
       - name: Upload iOS Framework
         uses: actions/upload-artifact@v4
         with:
           name: InventRa-iOS
           path: InventRa-iOS-Framework.zip
+          if-no-files-found: warn
 
   release:
     name: Create GitHub Release
@@ -96,16 +97,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: InventRa-Android
+          path: .
 
       - name: Download iOS Framework
         uses: actions/download-artifact@v4
         with:
           name: InventRa-iOS
+          path: .
+        continue-on-error: true # Agar tetap rilis APK Android jika iOS gagal
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "**/*.apk"
+          files: |
+            *.apk
+            *.zip
           name: InventRa App
           body: |
             ## 📦 InventRa Stable Release
