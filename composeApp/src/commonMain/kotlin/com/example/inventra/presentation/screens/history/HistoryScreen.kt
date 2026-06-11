@@ -341,7 +341,7 @@ private fun BorrowRecordCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "${strings.borrower}: ${record.borrowerName} (${record.borrowerDivision})",
+                        "${strings.borrower}: ${record.borrowerName} (${record.borrowerDivision.ifBlank { "-" }})",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )

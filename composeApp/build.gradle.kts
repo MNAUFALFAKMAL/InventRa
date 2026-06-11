@@ -161,9 +161,31 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val localProps = Properties().apply {
+                val f = rootProject.file("local.properties")
+                if (f.exists()) load(f.inputStream())
+            }
+            storeFile = localProps.getProperty("KEYSTORE_PATH")
+                ?.let { file(it) }
+                ?: file("release.jks") // fallback untuk CI
+            storePassword = localProps.getProperty("KEYSTORE_PASSWORD", "")
+            keyAlias = localProps.getProperty("KEY_ALIAS", "inventra")
+            keyPassword = localProps.getProperty("KEY_PASSWORD", "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = if (
+                rootProject.file("local.properties").exists() &&
+                rootProject.file("local.properties")
+                    .readText().contains("KEYSTORE_PATH")
+            ) signingConfigs.getByName("release")
+            else signingConfigs.getByName("debug") // fallback agar CI tidak gagal
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -171,6 +193,8 @@ android {
         }
         debug {
             manifestPlaceholders["testOnly"] = "false"
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
 

@@ -88,7 +88,6 @@ class AuthRepositoryImpl(
             }
 
             val responseText = response.bodyAsText()
-            println("REGISTER response ${response.status}: $responseText")
 
             if (!response.status.isSuccess()) {
                 val serverMsg = runCatching {
@@ -106,8 +105,6 @@ class AuthRepositoryImpl(
             }.getOrNull()
                 ?: return Result.failure(Exception("Gagal mendapat user ID dari respons"))
 
-            println("REGISTER: user created id=$newUserId")
-
             kotlinx.coroutines.delay(700)
 
             try {
@@ -120,9 +117,8 @@ class AuthRepositoryImpl(
                         put("is_active", true)
                     }
                 )
-                println("REGISTER: profile upserted")
             } catch (e: Exception) {
-                println("REGISTER profile upsert note: ${e.message}")
+                // REGISTER profile upsert note
             }
 
             Result.success(
@@ -135,7 +131,6 @@ class AuthRepositoryImpl(
                 )
             )
         } catch (e: Exception) {
-            println("REGISTER ERROR: ${e.message}")
             Result.failure(Exception(parseAuthError(e.message)))
         }
     }
@@ -154,7 +149,7 @@ class AuthRepositoryImpl(
                 }.decodeSingleOrNull<ProfileDto>()
                 ?.toUser(authUser.email ?: "")
         } catch (e: Exception) {
-            println("GET USER ERROR: ${e.message}"); null
+            null
         }
     }
 
@@ -170,7 +165,7 @@ class AuthRepositoryImpl(
                         limit(1)
                     }.decodeSingleOrNull<ProfileDto>()
             } catch (e: Exception) {
-                println("Profile query error: ${e.message}"); null
+                null
             }
 
             if (existingProfile != null) {
@@ -178,7 +173,6 @@ class AuthRepositoryImpl(
             }
 
             // Profile tidak ada → buat otomatis
-            println("LOGIN: profile tidak ada untuk ${authUser.email}, membuat otomatis...")
 
             val emailStr = authUser.email ?: ""
             val defaultName = emailStr.substringBefore("@")
@@ -204,9 +198,8 @@ class AuthRepositoryImpl(
                         put("is_active", true)
                     }
                 )
-                println("LOGIN: profile berhasil dibuat: $defaultName / $defaultRole / $defaultDivision")
             } catch (e: Exception) {
-                println("LOGIN: gagal buat profile: ${e.message}")
+                // LOGIN: gagal buat profile
             }
 
             // Baca ulang atau kembalikan fallback
@@ -228,7 +221,6 @@ class AuthRepositoryImpl(
                 } catch (e: Exception) { UserDivision.PUBDOK }
             )
         } catch (e: Exception) {
-            println("getCurrentUserOrCreate ERROR: ${e.message}")
             null
         }
     }
@@ -294,7 +286,7 @@ class AuthRepositoryImpl(
                     header("Authorization", "Bearer ${ApiConfig.supabaseServiceRoleKey}")
                 }
             } catch (e: Exception) {
-                println("Delete auth user note: ${e.message}")
+                // Delete auth user note
             }
             Result.success(Unit)
         } catch (e: Exception) { Result.failure(e) }

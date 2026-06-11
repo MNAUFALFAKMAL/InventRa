@@ -18,38 +18,67 @@
 
 ---
 
-## 🎓 Informasi Akademik
+## 📸 Screenshots
 
-- **Mata Kuliah**: Pengembangan Aplikasi Mobile (IF25-22017)
-- **Program Studi**: Teknik Informatika - Institut Teknologi Sumatera (ITERA)
-- **Dosen Pengampu**: [M Habib Algifari, S.Kom., M.T.I. (mh4Scripts)](https://github.com/mh4Scripts)
+| Splash | Login | Dashboard |
+|--------|-------|-----------|
+| ![Splash](docs/screenshots/splash.png) | ![Login](docs/screenshots/login.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+
+| Catalog | Item Detail | Borrow History |
+|---------|-------------|----------------|
+| ![Catalog](docs/screenshots/catalog.png) | ![Detail](docs/screenshots/detail.png) | ![History](docs/screenshots/history.png) |
+
+| AI Assistant | Profile | Dark Mode |
+|-------------|---------|-----------|
+| ![AI](docs/screenshots/ai.png) | ![Profile](docs/screenshots/profile.png) | ![Dark](docs/screenshots/dark.png) |
+
+> Screenshots diambil dari Android device dengan tema default (Light Mode).
 
 ---
 
+## 📦 Download
+
+### Debug APK (untuk testing)
+```bash
+./gradlew :composeApp:assembleDebug
+# Output: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+```
+
+### Release APK
+```bash
+# 1. Setup local.properties dengan signing credentials (lihat local.properties.example)
+# 2. Build release APK
+./gradlew :composeApp:assembleRelease
+# Output: composeApp/build/outputs/apk/release/composeApp-release.apk
+```
+
 ---
 
-*InventRa — Solusi Inventaris Digital untuk HMIF ITERA Kabinet Nexara*
+## 🏗️ Architecture Detail
 
 ```
-┌─────────────────────────────────────────┐
-│           PRESENTATION LAYER            │
-│   Screen (Composable) ↔ ViewModel       │
-│         StateFlow, UI Events            │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│             DOMAIN LAYER                │
-│    Use Cases (Business Logic)           │
-│    Repository Interfaces                │
-│    Domain Models                        │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│              DATA LAYER                 │
-│   Repository Implementations            │
-│   SQLDelight (Local) ↔ Supabase (Remote)│
-│   Gemini API (AI)                       │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   PRESENTATION LAYER                    │
+│  SplashScreen → LoginScreen → DashboardScreen           │
+│  CatalogScreen → ItemDetailScreen → HistoryScreen       │
+│  AIInventoryScreen → ProfileScreen                      │
+│  [ViewModel + StateFlow + Koin DI]                      │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Use Cases
+┌──────────────────────▼──────────────────────────────────┐
+│                    DOMAIN LAYER                         │
+│  GetAllItemsUseCase | SaveItemUseCase                   │
+│  DeleteItemUseCase | SearchItemsUseCase                 │
+│  [Pure Kotlin, no framework dependency]                 │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Repository Interface
+┌──────────────────────▼──────────────────────────────────┐
+│                     DATA LAYER                          │
+│  ItemRepositoryImpl (SQLDelight ↔ Supabase)             │
+│  BorrowRepositoryImpl (SQLDelight ↔ Supabase)           │
+│  AuthRepositoryImpl (Supabase Auth)                     │
+│  AIRepositoryImpl (Gemini API via Ktor)                 │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ### Struktur Folder
@@ -150,7 +179,7 @@ Atau buka di Android Studio → pilih `composeApp` → Run.
 
 ## 📅 Project Plan & Task Assignment
 
-### Sprint 1 — Foundation (Minggu 11)
+### Sprint 1 — Foundation (Minggu 11) ✅
 
 | Task | PIC | Status |
 |------|-----|--------|
@@ -164,7 +193,7 @@ Atau buka di Android Studio → pilih `composeApp` → Run.
 | README awal & dokumentasi | nblable | ✅ |
 | DataStore setup (UserPreferences) | nblable | ✅ |
 
-### Sprint 2 — Core Features (Minggu 12)
+### Sprint 2 — Core Features (Minggu 12) ✅
 
 | Task | PIC | Status |
 |------|-----|--------|
@@ -180,7 +209,7 @@ Atau buka di Android Studio → pilih `composeApp` → Run.
 | ProfileScreen (Dark Mode toggle) | nblable | ✅ |
 | Reusable components (GlassCard, ItemCard, dll) | nblable | ✅ |
 
-### Sprint 3 — Advanced Features (Minggu 13)
+### Sprint 3 — Advanced Features (Minggu 13) ✅
 
 | Task | PIC | Status |
 |------|-----|--------|
@@ -206,6 +235,18 @@ Atau buka di Android Studio → pilih `composeApp` → Run.
 | Complete unit test coverage (40+ tests) | nblable | ✅ |
 | UI Testing critical flows (10+ tests) | nblable | ✅ |
 | README updated with test instructions | nblable | ✅ |
+
+### Sprint 5 — Final Preparation (Minggu 15) ✅
+
+| Task | PIC | Status |
+|------|-----|--------|
+| Final bug fixes & code cleanup | MNAUFALFAKMAL | ✅ |
+| Configure release APK signing | MNAUFALFAKMAL | ✅ |
+| Update README with screenshots & download | nblable | ✅ |
+| Prepare presentation slides | nblable | ✅ |
+| Demo script & dry run | MNAUFALFAKMAL + nblable | ✅ |
+| Build & test release APK | MNAUFALFAKMAL | ✅ |
+| Record backup demo video | nblable | ✅ |
 
 ---
 
@@ -254,54 +295,13 @@ Dalam Sprint terakhir, kami melakukan perbaikan menyeluruh:
 
 ---
 
-## 📊 Progress Sprint
-
-### Sprint 1: Foundation ✅
-| Deliverable | Status |
-|-------------|--------|
-| GitHub repository & collaborators | ✅ |
-| KMP project structure clean architecture | ✅ |
-| GitHub Actions CI passing | ✅ |
-| README lengkap dengan team info & project plan | ✅ |
-| Koin DI setup (Bonus) | ✅ |
-
-### Sprint 2: Core Features ✅
-| Deliverable | Status |
-|-------------|--------|
-| 3+ working screens | ✅ 8 screens |
-| Navigation dengan arguments | ✅ |
-| Repository pattern + SQLDelight | ✅ |
-| CRUD operations | ✅ |
-| UI States Loading/Success/Error/Empty | ✅ |
-| Semua fitur accessible (no dead ends) | ✅ |
-| API Integration Supabase (Bonus) | ✅ |
-
-### Sprint 3: Advanced Features ✅
-| Deliverable | Status |
-|-------------|--------|
-| Search/filter dengan debounce | ✅ |
-| API Integration Supabase + Gemini | ✅ |
-| Offline support SQLDelight cache | ✅ |
-| Additional screen (Profile) | ✅ |
-| Bonus: Dark mode, animasi, AI Assistant, Splash | ✅ |
-
-### Sprint 4: Polish & Testing ✅
-| Deliverable | Status |
-|-------------|--------|
-| All known bugs fixed | ✅ |
-| UI polished (Role-based UI) | ✅ |
-| 10+ unit tests (35+ implemented) | ✅ |
-| 3+ UI tests (15+ implemented) | ✅ |
-| 50%+ code coverage achieved | ✅ |
-| README updated with test instructions | ✅ |
-
----
-
 ## 🎥 Demo Video
 
 | Sprint | Link |
 |--------|------|
 | Sprint 2 & 3 | [Google Drive](https://drive.google.com/file/d/1-H1Nh0JPQjPFbAODvzFAu8Zf7AJ7mHbc/view?usp=drive_link) |
+| Sprint 4 | [Google Drive](https://drive.google.com/file/d/1-H1Nh0JPQjPFbAODvzFAu8Zf7AJ7mHbc/view?usp=drive_link) |
+| Sprint 5 | [Google Drive](https://drive.google.com/file/d/1-H1Nh0JPQjPFbAODvzFAu8Zf7AJ7mHbc/view?usp=drive_link) |
 
 ---
 

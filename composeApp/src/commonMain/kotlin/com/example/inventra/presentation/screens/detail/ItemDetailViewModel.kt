@@ -60,19 +60,15 @@ class ItemDetailViewModel(
         onError: (String) -> Unit = {}
     ) {
         val currentState = uiState.value
-        println("DEBUG requestBorrow called, state=$currentState, name=$borrowerName")
 
         if (currentState !is ItemDetailUiState.Success) {
-            println("DEBUG requestBorrow: state bukan Success, return")
             onError("Data barang belum dimuat, coba lagi")
             return
         }
 
         val item = currentState.item
-        println("DEBUG item available=${item.availableStock} total=${item.totalStock} isBorrowable=${item.isBorrowable}")
 
         if (item.availableStock <= 0) {
-            println("DEBUG stok habis")
             onError("Stok barang habis")
             return
         }
@@ -96,12 +92,9 @@ class ItemDetailViewModel(
                     status = BorrowStatus.PENDING
                 )
 
-                println("DEBUG inserting borrow record for itemId=${item.id}")
-                val id = borrowRepository.borrowItem(record)
-                println("DEBUG borrow berhasil, localId=$id")
+                borrowRepository.borrowItem(record)
                 onSuccess()
             } catch (e: Exception) {
-                println("DEBUG borrow error: ${e.message}")
                 onError(e.message ?: "Gagal meminjam, coba lagi")
             }
         }

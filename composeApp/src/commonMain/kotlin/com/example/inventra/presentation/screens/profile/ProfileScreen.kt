@@ -573,6 +573,15 @@ fun ProfileScreen(
                 Text(strings.logout, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(24.dp))
+            // Version info — hanya render di Android (expect/actual jika perlu, atau gunakan kondisional platform)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "InventRa v1.0.0",  // hardcode untuk KMP compatibility
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

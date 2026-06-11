@@ -75,8 +75,6 @@ class BorrowRepositoryImpl(
     }
 
     override suspend fun borrowItem(record: BorrowRecord): Long {
-        println("DEBUG BorrowRepository.borrowItem: ${record.itemName}, itemId=${record.itemId}")
-
         // 1. Insert borrow record lokal
         queries.insertRecord(
             remote_id = null,
@@ -109,10 +107,9 @@ class BorrowRepositoryImpl(
                     updated_at = now,
                     id = record.itemId
                 )
-                println("BORROW: stok lokal ${existingItem.available_stock} → $newStock")
             }
         } catch (e: Exception) {
-            println("BORROW: update stok lokal gagal: ${e.message}")
+            // BORROW: update stok lokal gagal
         }
 
         // 3. Sync ke Supabase di background
@@ -151,13 +148,12 @@ class BorrowRepositoryImpl(
                         put("available_stock", currentRemote.availableStock - 1)
                     }
                     adminDb["items"].update(updateData) { filter { eq("id", remoteItemId) } }
-                    println("BORROW Supabase: Stok berhasil dikurangi (via Admin API)")
                 }
                 
                 // Trigger refresh item agar dashboard semua orang sinkron
                 lastSyncTime = 0
             } catch (e: Exception) {
-                println("BORROW Supabase sync gagal: ${e.message}")
+                // BORROW Supabase sync gagal
             }
         }
 
@@ -200,7 +196,7 @@ class BorrowRepositoryImpl(
                 adminDb["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
                 lastSyncTime = 0
             } catch (e: Exception) {
-                println("RETURN Supabase sync gagal: ${e.message}")
+                // RETURN Supabase sync gagal
             }
         }
     }
@@ -223,7 +219,7 @@ class BorrowRepositoryImpl(
                 )
             }
         } catch (e: Exception) {
-            println("APPROVE_RETURN: update stok lokal gagal: ${e.message}")
+            // APPROVE_RETURN: update stok lokal gagal
         }
 
         lastSyncTime = Clock.System.now().toEpochMilliseconds()
@@ -252,7 +248,7 @@ class BorrowRepositoryImpl(
                 }
                 lastSyncTime = 0
             } catch (e: Exception) {
-                println("APPROVE_RETURN Supabase sync gagal: ${e.message}")
+                // APPROVE_RETURN Supabase sync gagal
             }
         }
     }
@@ -268,7 +264,7 @@ class BorrowRepositoryImpl(
                 }
                 adminDb["borrow_records"].update(updateData) { filter { eq("id", targetId) } }
             } catch (e: Exception) {
-                println("APPROVE Supabase sync gagal: ${e.message}")
+                // APPROVE Supabase sync gagal
             }
         }
     }
@@ -285,7 +281,7 @@ class BorrowRepositoryImpl(
                 filter { neq("id", "00000000-0000-0000-0000-000000000000") }
             }
         } catch (e: Exception) {
-            println("deleteAll Supabase borrow_records error: ${e.message}")
+            // deleteAll Supabase borrow_records error
         }
     }
 
@@ -323,9 +319,8 @@ class BorrowRepositoryImpl(
                     )
                 }
             }
-            println("SYNC BORROW: ${records.size} records")
         } catch (e: Exception) {
-            println("SYNC BORROW offline: ${e.message}")
+            // SYNC BORROW offline
         }
     }
 }

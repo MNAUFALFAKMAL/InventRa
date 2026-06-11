@@ -97,7 +97,7 @@ class ItemRepositoryImpl(
                 // Update remote_id di lokal
                 queries.updateRemoteId(remote_id = response.id, id = localId)
             } catch (e: Exception) {
-                println("Supabase insert gagal: ${e.message}")
+                // Supabase insert gagal
             }
         }
         return localId
@@ -135,7 +135,7 @@ class ItemRepositoryImpl(
                 }
                 db["items"].update(updateData) { filter { eq("id", targetId) } }
             } catch (e: Exception) {
-                println("Supabase update gagal: ${e.message}")
+                // Supabase update gagal
             }
         }
     }
@@ -148,7 +148,7 @@ class ItemRepositoryImpl(
                 val targetId = item?.remote_id ?: return@launch
                 db["items"].delete { filter { eq("id", targetId) } }
             } catch (e: Exception) {
-                println("Supabase delete gagal: ${e.message}")
+                // Supabase delete gagal
             }
         }
     }
@@ -180,7 +180,7 @@ class ItemRepositoryImpl(
                 filter { neq("id", "00000000-0000-0000-0000-000000000000") }
             }
         } catch (e: Exception) {
-            println("deleteAll Supabase items error: ${e.message}")
+            // deleteAll Supabase items error
         }
     }
 
@@ -235,9 +235,7 @@ class ItemRepositoryImpl(
                     )
                 }
             }
-            println("SYNC ITEMS: ${remoteItems.size} items")
         } catch (e: Exception) {
-            println("SYNC ITEMS error: ${e.message}")
             e.printStackTrace()
         }
     }

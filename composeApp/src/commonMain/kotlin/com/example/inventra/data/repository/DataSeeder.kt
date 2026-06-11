@@ -16,9 +16,8 @@ object DataSeeder {
             val existing = db["items"].select().decodeList<Map<String, Any>>()
             if (existing.isNotEmpty()) return 
             seedItems()
-            println("SEED: Data inventaris 2026 berhasil di-seed")
         } catch (e: Exception) {
-            println("SEED: Gagal seed data — ${e.message}")
+            // SEED: Gagal seed data
         }
     }
 
@@ -177,7 +176,7 @@ object DataSeeder {
             try {
                 db["items"].insert(dto)
             } catch (e: Exception) {
-                println("SEED: Gagal insert ${dto.name} — ${e.message}")
+                // SEED: Gagal insert
             }
         }
     }
