@@ -110,7 +110,7 @@ Aplikasi ini mengimplementasikan **Clean Architecture** (Data, Domain, Presentat
 
 ---
 
-## 🎥 Demo Video & QR Code
+## 🎥 Demo Video
 
 | Phase | Link | QR Code |
 |-------|------|:-------:|
